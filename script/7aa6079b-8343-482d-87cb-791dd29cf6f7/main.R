@@ -183,10 +183,10 @@ my_cont_tests <- function(data, variable, by, ...) {
     a_test <- oneway.test(x ~ g, data = df)
     
     tibble::tibble(
-      `Wilcox W` = unname(w_test$statistic),
-      `Wilcox P` = w_test$p.value,
-      `ANOVA F`  = unname(a_test$statistic),
-      `ANOVA P`  = a_test$p.value
+      `Wilcox W` = round(unname(w_test$statistic), 4),
+      `Wilcox P` = round(w_test$p.value, 4),
+      `ANOVA F`  = round(unname(a_test$statistic), 4),
+      `ANOVA P`  = round(a_test$p.value, 4)
     )
     
   } else {
@@ -195,10 +195,10 @@ my_cont_tests <- function(data, variable, by, ...) {
     a_test <- oneway.test(x ~ g, data = df)
     
     tibble::tibble(
-      `Kruskal χ²` = unname(k_test$statistic),
-      `Kruskal P`  = k_test$p.value,
-      `ANOVA F`    = unname(a_test$statistic),
-      `ANOVA P`    = a_test$p.value
+      `Kruskal χ²` = round(unname(k_test$statistic), 4),
+      `Kruskal P`  = round(k_test$p.value, 4),
+      `ANOVA F`    = round(unname(a_test$statistic), 4),
+      `ANOVA P`    = round(a_test$p.value, 4)
     )
   }
 }
@@ -216,10 +216,41 @@ my_cat_tests <- function(data, variable, by, ...) {
   fisher_p <- fisher.test(tab)$p.value
   
   tibble::tibble(
-    `Chi-sq χ²` = unname(chi$statistic),
-    `Chi-sq P`  = chi$p.value,
-    `Fisher P`  = fisher_p
+    `Chi-sq χ²` = round(unname(chi$statistic), 4),
+    `Chi-sq P`  = round(chi$p.value, 4),
+    `Fisher P`  = round(fisher_p, 4)
   )
+}
+
+add_fdr_for_all_tests <- function(tbl_obj) {
+  p_cols <- tbl_obj$table_styling$header |>
+    dplyr::filter(stringr::str_detect(label, " P$")) |>
+    dplyr::pull(column)
+
+  if (length(p_cols) == 0) {
+    return(tbl_obj)
+  }
+
+  fdr_cols <- paste0(p_cols, "_fdr")
+
+  tbl_obj |>
+    modify_table_body(
+      ~ .x |>
+        dplyr::mutate(
+          dplyr::across(
+            dplyr::all_of(p_cols),
+            ~ round(stats::p.adjust(.x, method = "BH"), 4),
+            .names = "{.col}_fdr"
+          )
+        )
+    ) |>
+    modify_header(
+      !!!stats::setNames(
+        as.list(stringr::str_replace(tbl_obj$table_styling$header$label[match(p_cols, tbl_obj$table_styling$header$column)], " P$", " FDR")),
+        fdr_cols
+      )
+    ) |>
+    modify_column_unhide(columns = dplyr::all_of(fdr_cols))
 }
 
 # format_p_sci <- function(x) {
@@ -240,6 +271,10 @@ tbl <- tbl |>
       all_categorical() ~ "{n} ({p}%)",
       all_continuous() ~ "{mean} ± {sd}"
     ),
+    digits = list(
+      all_continuous() ~ c(2, 2),
+      all_categorical() ~ c(0, 2)
+    ),
     missing = "always"
     
   ) %>%
@@ -253,7 +288,8 @@ tbl <- tbl |>
 
   # add_stat(fns = all_continuous() ~ my_wilcox) %>%
   # add_stat(fns = all_continuous() ~ my_anova) %>%
-  modify_header(statistic = "**F/X2**", p.value = "**p-value**") 
+  modify_header(statistic = "**F/X2**", p.value = "**p-value**") |>
+  add_fdr_for_all_tests()
   # modify_fmt_fun(
   #   all_continuous() ~ function(x) sprintf("%.5f", x),
   #   all_categorical() ~ function(x) sprintf("%.5f", x)
