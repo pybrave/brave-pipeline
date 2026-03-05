@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+import sys
+import os
+import json
+import pandas as pd 
+import matplotlib.pyplot as plt
+# script_dir = os.path.dirname(os.path.abspath(__file__))
+common_dir =os.getenv("COMMON_SCRIPT_DIR")
+sys.path.insert(0, common_dir)
+from metaphlan import get_abundance,get_metadata,rename_taxonomy
+os.chdir(os.getenv("OUTPUT_DIR"))
+import seaborn as sns
+from statannotations.Annotator import Annotator
+
+
+params_path = sys.argv[1]
+output_path = sys.argv[2]
+params_path="params.json"
+output_path="output"
+
+
+
+# In[14]:
+
+
+# pip install statannotations
+
+
+# In[4]:
+
+
+with open(params_path) as f:
+    data = json.load(f)
+abundance0 = get_abundance(data,rename=False)
+
+metadata = get_metadata(data,use_group_field=True)
+
+# rank = data["rank"]
+
+
+# In[ ]:
+
+
+
+
+
+# In[5]:
+
+
+query = data["query"].split(",")
+query
+
+
+# In[6]:
+
+
+abundance= abundance0[abundance0.index.get_level_values("taxonomy").isin(query)].reset_index(["clade_name","ncbi_tax_id","tax_id","rank"],drop=True)
+abundance
+
+
+# In[7]:
+
+
+# abundance0[abundance0.index.get_level_values("rank")=="SPECIES"].sum(axis=0)
+
+
+# In[8]:
+
+
+abundance_group = pd.merge(abundance.T,metadata,left_index=True,right_index=True).reset_index().rename({"index":"sample"},axis=1)
+
+abundance_group
+
+
+# In[9]:
+
+
+df_long = pd.melt(abundance_group, id_vars=["sample",'group'], var_name="clade", value_name="abunance")
+df_long['clade'] = df_long.apply(lambda x : rename_taxonomy(x['clade']) ,axis=1)
+
+
+# In[10]:
+
+
+df_long
+
+
+# In[14]:
+
+
+custom_palette = {
+    data["groups_name"]["control"]: "#66c2a5",
+    data["groups_name"]["treatment"]: "#fc8d62"
+}
+
+
+# In[13]:
+
+
+plt.figure(figsize=(8, 5))
+ax = sns.boxplot(
+    data=df_long,
+    x="clade",
+    y="abunance",
+    palette=custom_palette,
+    hue="group",
+    showfliers=False,  # 不显示异常值
+    hue_order=[data["groups_name"]["control"],data["groups_name"]["treatment"]]
+)
+plt.legend(
+    title='Group',
+    bbox_to_anchor=(1.05, 1),   # (x, y)：x > 1 表示图像右边
+    loc='upper left',           # 相对于 bbox 的位置
+    borderaxespad=0.
+)
+
+plt.xticks(rotation=90)
+# 构造比较组（每个 clade 比较 SCZ vs HC）
+clades = df_long["clade"].unique().tolist()
+groups = df_long["group"].unique().tolist()
+pairs = [((clade, groups[0]), (clade, groups[1])) for clade in clades]
+
+# 添加显著性标注
+annotator = Annotator(
+    ax,
+    pairs,
+    data=df_long,
+    x="clade",
+    y="abunance",
+    
+    hue="group",
+    order=clades,
+    hue_order=groups
+)
+
+annotator.configure(
+    test="Mann-Whitney",   # 使用独立样本 t 检验
+    text_format="star",  # 星号表示显著性
+    loc="inside",        # 显示在箱体内
+    verbose=1
+)
+annotator.apply_and_annotate()
+
+plt.ylabel("abunance")
+plt.tight_layout()
+

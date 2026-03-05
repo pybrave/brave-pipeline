@@ -1,0 +1,58 @@
+process.container = '192.168.3.60:5001/r-notebook-nf:x86_64-ubuntu-22.04'
+docker{
+    enabled = true
+    runOptions = ' --add-host="master:192.168.3.60"  -v  /ssd2/software:/ssd2/software  -v /data:/data -v /data2:/data2 --user $(id -u):$(id -g) -v /ssd1/wy/workspace2/docker/passwd:/etc/passwd -v /ssd1/wy/workspace2:/ssd1/wy/workspace2   -v  /ssd1/wy/workspace2:/home/jovyan'
+}
+lineage.enabled = true
+
+trace {
+    fields = 'task_id,tag,container,process,native_id,workdir,hash,name,status,exit,realtime,%cpu,cpus,%mem,memory,rss,vmem,read_bytes,write_bytes'
+    overwrite = true
+}
+params {
+    max_memory=150.GB
+    max_cpus=30
+}
+executor.queueSize = 8
+process{
+    // cpus = 10 
+    // memory = 10.GB
+    cpus = { check_max(10  * task.attempt,'cpus') }
+    memory = {check_max(10.GB * task.attempt,'memory')}
+    cache = 'lenient'
+    errorStrategy = 'retry'
+    maxRetries = 5
+}
+
+
+
+def check_max(obj, type) {
+    if (type == 'memory') {
+        try {
+            if (obj.compareTo(params.max_memory as nextflow.util.MemoryUnit) == 1)
+                return params.max_memory as nextflow.util.MemoryUnit
+            else
+                return obj
+        } catch (all) {
+            println "   ### ERROR ###   Max memory '${params.max_memory}' is not valid! Using default value: $obj"
+            return obj
+        }
+    } else if (type == 'time') {
+        try {
+            if (obj.compareTo(params.max_time as nextflow.util.Duration) == 1)
+                return params.max_time as nextflow.util.Duration
+            else
+                return obj
+        } catch (all) {
+            println "   ### ERROR ###   Max time '${params.max_time}' is not valid! Using default value: $obj"
+            return obj
+        }
+    } else if (type == 'cpus') {
+        try {
+            return Math.min( obj, params.max_cpus as int )
+        } catch (all) {
+            println "   ### ERROR ###   Max cpus '${params.max_cpus}' is not valid! Using default value: $obj"
+            return obj
+        }
+    }
+}
