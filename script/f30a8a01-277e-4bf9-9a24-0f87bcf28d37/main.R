@@ -29,6 +29,44 @@ extract_single_column <- function(node, default = NULL) {
 	values[[1]]
 }
 
+normalize_color <- function(node) {
+	if (is.null(node) || length(node) == 0) return(NULL)
+
+	if (is.character(node)) {
+		value <- node[[1]]
+		if (is.na(value) || value == "") return(NULL)
+		return(value)
+	}
+
+	if (is.list(node)) {
+		if (!is.null(node$hex)) return(normalize_color(node$hex))
+		if (!is.null(node$value)) return(normalize_color(node$value))
+		if (!is.null(node$color)) return(normalize_color(node$color))
+
+		flatten <- unlist(node, use.names = FALSE)
+		if (length(flatten) > 0) return(normalize_color(as.character(flatten[[1]])))
+	}
+
+	NULL
+}
+
+safe_color <- function(color_value, fallback, label) {
+	if (is.null(color_value)) return(fallback)
+	valid <- tryCatch({
+		grDevices::col2rgb(color_value)
+		TRUE
+	}, error = function(e) {
+		FALSE
+	})
+
+	if (!valid) {
+		warning(sprintf("%s 无效颜色值: %s，使用默认颜色 %s", label, color_value, fallback))
+		return(fallback)
+	}
+
+	color_value
+}
+
 params <- jsonlite::fromJSON("params.json", simplifyVector = FALSE)
 
 input_file <- params$input_file
@@ -41,7 +79,7 @@ df <- readr::read_tsv(file_path, show_col_types = FALSE)
 
 feature_col <- extract_single_column(input_file$x_var, default = "Row.names")
 panel_col <- extract_single_column(input_file$panel_var, default = NULL)
-y_label <- extract_single_column(input_file$y_var, default = "abundance")
+# y_label_default <- extract_single_column(input_file$y_var, default = "abundance")
 
 group1_cols <- extract_column_names(input_file$group1_vars)
 group2_cols <- extract_column_names(input_file$group2_vars)
@@ -79,6 +117,10 @@ show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
 point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
+group1_color <- safe_color(normalize_color(params$group1_color), "#1f77b4", "group1_color")
+group2_color <- safe_color(normalize_color(params$group2_color), "#ff7f0e", "group2_color")
+x_label <- params$x_label %||%  "" #feature_col
+y_label <- params$y_label %||%  "" #"abundance"
 output_name <- params$output_name %||% "boxplot"
 
 x_var <- feature_col
@@ -96,10 +138,28 @@ plot_obj <- switch(
 		base_plot +
 			geom_jitter(width = 0.2, size = point_size, alpha = point_alpha)
 	},
+	"boxplotV1" ={
+        box_dodge_width <- 0.75
+        base_plot +
+        geom_boxplot(outlier.alpha = 0.3, alpha = 0.35,				
+            position = position_dodge(width = box_dodge_width)) +
+        geom_jitter( size = point_size, alpha = point_alpha,
+            position = position_jitterdodge(jitter.width = 0.15, dodge.width = box_dodge_width) )
+	  
+	},
 	"boxplot" = {
+		box_dodge_width <- 0.75
 		base_plot +
-			geom_boxplot(outlier.alpha = 0.3, alpha = 0.35) +
-			geom_jitter(width = 0.15, size = point_size, alpha = point_alpha)
+			geom_boxplot(
+				outlier.alpha = 0.3,
+				alpha = 0.35,
+				position = position_dodge(width = box_dodge_width)
+			) +
+			geom_point(
+				position = position_jitterdodge(jitter.width = 0.15, dodge.width = box_dodge_width),
+				size = point_size,
+				alpha = point_alpha
+			)
 	},
 	{
 		warning(sprintf("未知 plot_type=%s，使用 violin", plot_type))
@@ -169,8 +229,10 @@ if (isTRUE(show_stats)) {
 }
 
 plot_obj <- plot_obj +
+	scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
+	scale_fill_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
 	labs(
-		x = feature_col,
+		x = x_label,
 		y = y_label,
 		color = "Group",
 		fill = "Group"
