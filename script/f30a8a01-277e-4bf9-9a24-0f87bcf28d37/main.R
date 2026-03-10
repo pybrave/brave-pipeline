@@ -67,6 +67,14 @@ safe_color <- function(color_value, fallback, label) {
 	color_value
 }
 
+sanitize_filename <- function(x) {
+	x <- as.character(x)
+	x <- stringr::str_trim(x)
+	x <- stringr::str_replace_all(x, "[^A-Za-z0-9._-]", "_")
+	x <- stringr::str_replace_all(x, "_+", "_")
+	ifelse(x == "", "panel", x)
+}
+
 params <- jsonlite::fromJSON("params.json", simplifyVector = FALSE)
 
 input_file <- params$input_file
@@ -113,6 +121,7 @@ long_df <- df %>%
 	)
 
 plot_type <- params$plot_type %||% "violin"
+panel_type <- params$panel_type %||% "free_x"
 show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
 point_size <- as.numeric(params$point_size %||% 1.5)
@@ -169,23 +178,26 @@ plot_obj <- switch(
 	}
 )
 
-if (!is.null(panel_col) && panel_col %in% colnames(long_df)) {
-	plot_obj <- plot_obj + facet_wrap(vars(.data[[panel_col]]), scales = "free_x")
-}
+add_stats_layer <- function(plot_in, data_for_plot, source_df) {
+	if (!isTRUE(show_stats)) {
+		return(plot_in)
+	}
 
-if (isTRUE(show_stats)) {
 	p_col <- "P_value"
 	q_col <- "Qvalue"
 
 	join_cols <- feature_col
-	if (!is.null(panel_col) && panel_col %in% colnames(df)) {
+	if (!is.null(panel_col) && panel_col %in% colnames(source_df) && panel_col %in% colnames(data_for_plot)) {
 		join_cols <- c(join_cols, panel_col)
 	}
 
 	stats_source_cols <- unique(c(join_cols, p_col, q_col))
-	stats_source_cols <- intersect(stats_source_cols, colnames(df))
+	stats_source_cols <- intersect(stats_source_cols, colnames(source_df))
+	if (length(stats_source_cols) == 0) {
+		return(plot_in)
+	}
 
-	stats_df <- df %>%
+	stats_df <- source_df %>%
 		dplyr::select(dplyr::all_of(stats_source_cols)) %>%
 		dplyr::distinct()
 
@@ -205,43 +217,69 @@ if (isTRUE(show_stats)) {
 		stats_df <- stats_df %>%
 			dplyr::mutate(stat_text = sprintf("q=%.3g", .data[[q_col]]))
 	} else {
-		stats_df <- NULL
+		return(plot_in)
 	}
 
-	if (!is.null(stats_df)) {
-		y_max <- long_df %>%
-			dplyr::group_by(dplyr::across(dplyr::all_of(join_cols))) %>%
-			dplyr::summarise(y_pos = max(value, na.rm = TRUE) * 1.05, .groups = "drop")
+	y_max <- data_for_plot %>%
+		dplyr::group_by(dplyr::across(dplyr::all_of(join_cols))) %>%
+		dplyr::summarise(y_pos = max(value, na.rm = TRUE) * 1.05, .groups = "drop")
 
-		stats_df <- stats_df %>%
-			dplyr::left_join(y_max, by = join_cols)
+	stats_df <- stats_df %>%
+		dplyr::left_join(y_max, by = join_cols)
 
-		plot_obj <- plot_obj +
-			geom_text(
-				data = stats_df,
-				aes(x = .data[[feature_col]], y = y_pos, label = stat_text),
-				inherit.aes = FALSE,
-				size = 3,
-				angle = 90,
-				vjust = -0.2
-			)
-	}
+	plot_in +
+		geom_text(
+			data = stats_df,
+			aes(x = .data[[feature_col]], y = y_pos, label = stat_text),
+			inherit.aes = FALSE,
+			size = 3,
+			angle = 90,
+			vjust = -0.2
+		)
 }
 
-plot_obj <- plot_obj +
-	scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
-	scale_fill_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
-	labs(
-		x = x_label,
-		y = y_label,
-		color = "Group",
-		fill = "Group"
-	) +
-	theme_bw(base_size = 12) +
-	theme(
-		axis.text.x = element_text(angle = 45, hjust = 1),
-		legend.position = "top"
-	)
-output_path <- str_glue("output/{output_name}.pdf")
-ggsave(filename = output_path, plot = plot_obj, width = 12, height = 7, dpi = 300)
-message(sprintf("Plot saved to: %s", output_path))
+add_common_style <- function(plot_in) {
+	plot_in +
+		scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
+		scale_fill_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
+		labs(
+			x = x_label,
+			y = y_label,
+			color = "Group",
+			fill = "Group"
+		) +
+		theme_bw(base_size = 12) +
+		theme(
+			axis.text.x = element_text(angle = 45, hjust = 1),
+			legend.position = "top"
+		)
+}
+
+if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "split") {
+	panel_values <- unique(long_df[[panel_col]])
+	panel_values <- panel_values[!is.na(panel_values)]
+
+	for (panel_value in panel_values) {
+		panel_data <- long_df %>% dplyr::filter(.data[[panel_col]] == panel_value)
+		panel_source_df <- df %>% dplyr::filter(.data[[panel_col]] == panel_value)
+		panel_plot <- plot_obj %+% panel_data
+		panel_plot <- add_stats_layer(panel_plot, panel_data, panel_source_df)
+		panel_plot <- add_common_style(panel_plot)
+
+		panel_suffix <- sanitize_filename(panel_value)
+		output_path <- str_glue("output/{output_name}_{panel_suffix}.pdf")
+		ggsave(filename = output_path, plot = panel_plot, width = 12, height = 7, dpi = 300)
+		message(sprintf("Plot saved to: %s", output_path))
+	}
+} else {
+	if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "free_x" && panel_type!="none") {
+		plot_obj <- plot_obj + facet_wrap(vars(.data[[panel_col]]), scales = "free_x")
+	}
+
+	plot_obj <- add_stats_layer(plot_obj, long_df, df)
+	plot_obj <- add_common_style(plot_obj)
+
+	output_path <- str_glue("output/{output_name}.pdf")
+	ggsave(filename = output_path, plot = plot_obj, width = 12, height = 7, dpi = 300)
+	message(sprintf("Plot saved to: %s", output_path))
+}

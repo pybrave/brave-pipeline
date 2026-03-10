@@ -58,6 +58,28 @@
           "value": "boxplot"
         }
       ]
+    },{
+      "name": "panel_type",
+      "label": "Panel Type",
+      "type": "BaseSelect",
+      "initialValue": "free_x",
+      "required": true,
+      "rules": [
+        {
+          "required": true,
+          "message": "Please select a Panel type"
+        }
+      ],
+      "data": [
+        {
+          "label": "free_x",
+          "value": "free_x"
+        },
+        {
+          "label": "split",
+          "value": "split"
+        }
+      ]
     },
     {
       "name": "show_stats",

@@ -24,6 +24,10 @@
       "type": "string",
       "enum": ["violin", "scatter", "boxplot"]
     },
+    "panel_type": {
+      "type": "string",
+      "enum": ["free_x", "split"]
+    },
     "show_stats": { "type": "boolean" },
     "stat_label": {
       "type": "string",
