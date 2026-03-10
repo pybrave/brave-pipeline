@@ -179,7 +179,7 @@ p_values <- as.vector(p_matrix)
 p_values_no_na <- p_values[!is.na(p_values)]
 
 # 使用 FDR 校正（或改为 "bonferroni"）
-p_adjusted <- p.adjust(p_values_no_na, method = "none")
+p_adjusted <- p.adjust(p_values_no_na, method = "BH")
 
 # 把校正后的 p 值重新填回矩阵形状
 p_adj_matrix <- matrix(NA, nrow = nrow(p_matrix), ncol = ncol(p_matrix))
@@ -191,10 +191,10 @@ colnames(p_adj_matrix) <- colnames(p_matrix)
 write_tsv(as.data.frame(corr_matrix) |> rownames_to_column("name"),file = "output/prompt.ai")
 
 write_tsv(as.data.frame(corr_matrix) |> rownames_to_column("name"),file = "output/corr_matrix.tsv")
+write_tsv(as.data.frame(p_matrix)|> rownames_to_column("name"),file = "output/p_matrix.tsv")
 write_tsv(as.data.frame(p_adj_matrix)|> rownames_to_column("name"),file = "output/p_adj_matrix.tsv")
 
-sig_matrix <- ifelse(p_adj_matrix < 0.01, "**",
-                     ifelse(p_adj_matrix < 0.05, "*", ""))
+
 
 
 # "__heatmap_width": 8,
@@ -211,45 +211,16 @@ cluster_cols <- params$`__heatmap_cluster_cols`
 show_rownames <- params$`__heatmap_show_rownames`
 show_colnames <- params$`__heatmap_show_colnames`
 heatmap_title <- params$`__heatmap_title`
-  
-pdf(file = str_glue("output/heatmap.pdf") , width =heatmap_width,height =heatmap_height)
-# pheatmap(
-#   corr_matrix,
-#   display_numbers = sig_matrix,
-#   color = colorRampPalette(c("#9BBBE1", "#FFFFFF", "#F09BA0"))(100), # 蓝白红
-#   cluster_rows = cluster_rows,
-#   cluster_cols = cluster_cols,
-#   show_rownames =show_rownames,
-#   show_colnames = show_colnames,
-#   fontsize_number = 10,
-#   fontsize = 12,
-#   main = heatmap_title, #"Metabolite - Metabolite Correlation",
-#   border_color = NA # 去掉边框，更干净
-# )
-
-# breaks <- seq(-1, 1, length.out = 101)
-# pheatmap(
-#   corr_matrix,
-#   display_numbers = sig_matrix,
-#   color = colorRampPalette(c("#9BBBE1", "#FFFFFF", "#F09BA0"))(100),
-#   breaks = breaks,
-#   cluster_rows = cluster_rows,
-#   cluster_cols = cluster_cols,
-#   show_rownames = show_rownames,
-#   show_colnames = show_colnames,
-#   fontsize_number = 10,
-#   fontsize = 12,
-#   main = heatmap_title,
-#   border_color = NA
-# )
-
 max_abs <- max(abs(corr_matrix), na.rm = TRUE)
 
 breaks <- seq(-max_abs, max_abs, length.out = 101)
 
+adj_sig_matrix <- ifelse(p_adj_matrix < 0.01, "**",
+                     ifelse(p_adj_matrix < 0.05, "*", ""))
+pdf(file = str_glue("output/heatmap_fdr.pdf") , width =heatmap_width,height =heatmap_height)
 pheatmap(
   corr_matrix ,
-  display_numbers = sig_matrix,
+  display_numbers = adj_sig_matrix,
   color = colorRampPalette(c("#9BBBE1", "#FFFFFF", "#F09BA0"))(100),
   breaks = breaks,
   cluster_rows = cluster_rows,
@@ -265,6 +236,25 @@ dev.off()
 
 
 
+
+sig_matrix <- ifelse(p_matrix < 0.01, "**",
+                         ifelse(p_matrix < 0.05, "*", ""))
+pdf(file = str_glue("output/heatmap.pdf") , width =heatmap_width,height =heatmap_height)
+pheatmap(
+  corr_matrix ,
+  display_numbers = sig_matrix,
+  color = colorRampPalette(c("#9BBBE1", "#FFFFFF", "#F09BA0"))(100),
+  breaks = breaks,
+  cluster_rows = cluster_rows,
+  cluster_cols = cluster_cols,
+  show_rownames = show_rownames,
+  show_colnames = show_colnames,
+  fontsize_number = 10,
+  fontsize = 12,
+  main = heatmap_title,
+  border_color = NA
+)
+dev.off()
 
 
 

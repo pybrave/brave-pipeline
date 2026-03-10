@@ -1,0 +1,127 @@
+{
+  "group_field": "group",
+  "input_file": {
+    "id": 7001,
+    "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+    "sample_id": null,
+    "file_name": "肠道菌群_CM_SM",
+    "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+    "file_type": "collected",
+    "content": "/opt/brave_prod/workspace/analysis/3ab6cf0a-d53d-4637-a039-ea347e0d435f/99ffdb15-fa10-4a31-a12f-34e8d7656789/b12aac19-4dab-4504-ac09-dd9bfe0b38b6/output/肠道菌群_CM_SM.tsv",
+    "form_type": "CollectedSampleSelect",
+    "groups": [
+      "sample",
+      "x_var",
+      "y_var",
+      "panel_var",
+      "group1_vars",
+      "group2_vars"
+    ],
+    "x_var": {
+      "id": 7001,
+      "sample_name": "Row.names",
+      "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+      "columns_name": "Row.names"
+    },
+    "panel_var": {
+      "id": 7001,
+      "sample_name": "Type",
+      "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+      "columns_name": "Type"
+    },
+    "group1_vars": [
+      {
+        "id": 7001,
+        "sample_name": "cm135",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm135"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm172",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm172"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm173",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm173"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm175",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm175"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm177",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm177"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm179",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm179"
+      }
+    ],
+    "group2_vars": [
+      {
+        "id": 7001,
+        "sample_name": "Sm170",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "Sm170"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm169",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm169"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm166",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm166"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm165",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm165"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm162",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm162"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm163",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm163"
+      }
+    ]
+  },
+  "plot_type": "violin",
+  "show_stats": true,
+  "point_size": 1.5,
+  "point_alpha": 0.7,
+  "output_name": "interactive_plot.png",
+  "colors": {
+    "input_file": "-"
+  },
+  "groups_name": {
+    "input_file": "-"
+  },
+  "re_groups_name": {
+    "input_file": "-"
+  },
+  "groups": [
+    "input_file"
+  ],
+  "pipeline_dir": "/opt/brave_prod/workspace/pipeline"
+}

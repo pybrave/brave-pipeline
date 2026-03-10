@@ -153,6 +153,7 @@ OR
 CI <- exp(confint.default(model))
 CI
 p_values <- summary(model)$coefficients[,4]
+p_values_bh <- p.adjust(p_values, method = "BH")
 
 # 整理成表格
 result <- data.frame(
@@ -160,7 +161,8 @@ result <- data.frame(
   OR = OR,
   Lower95CI = CI[,1],
   Upper95CI = CI[,2],
-  Pvalue = p_values
+  Pvalue = p_values,
+  Pvalue_fdr = p_values_bh
 )
 
 write_tsv(result, file = str_glue("output/logistic_res.tsv"))
