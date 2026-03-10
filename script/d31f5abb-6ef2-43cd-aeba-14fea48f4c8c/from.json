@@ -1,0 +1,222 @@
+{
+  "formJson": [
+    {
+      "name": "x_input",
+      "label": "x input",
+      "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+      "db": true,
+      "group": "group_field",
+      "type": "CollectedSampleSelect",
+      "columns": [
+        "feature_vars"
+      ],
+      "modes": [
+        1
+      ],
+      "columns_rules": [
+        1
+      ],
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
+      "name": "y_input",
+      "label": "y input",
+      "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+      "db": true,
+      "group": "group_field",
+      "type": "CollectedSampleSelect",
+      "columns": [
+        "feature_vars"
+      ],
+      "modes": [
+        1
+      ],
+      "columns_rules": [
+        1
+      ],
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
+      "name": "corr_method",
+      "label": "correlation method",
+      "type": "BaseSelect",
+      "initialValue": "spearman",
+      "data": [
+        { "label": "Spearman", "value": "spearman" },
+        { "label": "Pearson", "value": "pearson" },
+        { "label": "Kendall", "value": "kendall" }
+      ],
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
+      "name": "adjust_method",
+      "label": "p adjust method",
+      "type": "BaseSelect",
+      "initialValue": "BH",
+      "data": [
+        { "label": "BH", "value": "BH" },
+        { "label": "Bonferroni", "value": "bonferroni" },
+        { "label": "Holm", "value": "holm" },
+        { "label": "BY", "value": "BY" },
+        { "label": "FDR", "value": "fdr" },
+        { "label": "None", "value": "none" }
+      ],
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
+      "name": "show_signif_marker",
+      "label": "show significance marker",
+      "type": "BaseSwitch",
+      "col": 12,
+      "initialValue": true
+    },
+    {
+      "name": "signif_by",
+      "label": "significance by",
+      "type": "BaseSelect",
+        "col": 12,
+      "initialValue": "p",
+      "depends": [
+        {
+          "name": "show_signif_marker",
+          "value": true
+        }
+      ],
+      "data": [
+        { "label": "p value", "value": "p" },
+        { "label": "q value", "value": "q" }
+      ]
+    },
+    {
+      "name": "sig_level_1",
+      "label": "* level",
+        "col": 8,
+      "type": "BaseInputNumber",
+      "initialValue": 0.05,
+      "depends": [
+        {
+          "name": "show_signif_marker",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "sig_level_2",
+      "label": "** level",
+        "col": 8,
+      "type": "BaseInputNumber",
+      "initialValue": 0.01,
+      "depends": [
+        {
+          "name": "show_signif_marker",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "sig_level_3",
+      "label": "*** level",
+      "type": "BaseInputNumber",
+      "col": 8,
+      "initialValue": 0.001,
+      "depends": [
+        {
+          "name": "show_signif_marker",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "cluster_rows",
+      "label": "cluster rows",
+      "col": 12,
+      "type": "BaseSwitch",
+      "initialValue": true
+    },
+    {
+      "name": "cluster_cols",
+      "label": "cluster cols",
+        "col": 12,
+      "type": "BaseSwitch",
+      "initialValue": true
+    },
+    {
+      "name": "heatmap_show_rownames",
+      "label": "show row names",
+        "col": 12,
+      "type": "BaseSwitch",
+      "initialValue": true
+    },
+    {
+      "name": "heatmap_show_colnames",
+      "label": "show col names",
+        "col": 12,
+      "type": "BaseSwitch",
+      "initialValue": true
+    },
+    {
+      "name": "heatmap_width",
+      "label": "heatmap width",
+        "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 12
+    },
+    {
+      "name": "heatmap_height",
+      "label": "heatmap height",
+        "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 10
+    },
+    {
+      "name": "low_color",
+      "label": "low color",
+        "col": 8,
+         "required": true,
+      "type": "BaseColorPicker",
+      "initialValue": "#4575B4"
+    },
+    {
+      "name": "mid_color",
+      "label": "middle color",
+        "col": 8,
+         "required": true,
+      "type": "BaseColorPicker",
+      "initialValue": "#FFFFFF"
+    },
+    {
+      "name": "high_color",
+      "label": "high color",
+        "col": 8,
+         "required": true,
+      "type": "BaseColorPicker",
+      "initialValue": "#D73027"
+    },
+    {
+      "name": "plot_title",
+      "label": "plot title",
+      "type": "BaseInput",
+      "initialValue": "Correlation Heatmap"
+    }
+  ]
+}

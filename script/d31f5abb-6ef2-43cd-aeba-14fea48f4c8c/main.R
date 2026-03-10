@@ -1,0 +1,255 @@
+library(tidyverse)
+library(jsonlite)
+library(pheatmap)
+
+`%||%` <- function(x, y) {
+	if (is.null(x) || length(x) == 0) y else x
+}
+
+normalize_color <- function(node, fallback = NULL) {
+	if (is.null(node) || length(node) == 0) return(fallback)
+
+	if (is.character(node)) {
+		value <- node[[1]]
+		if (is.na(value) || value == "") return(fallback)
+		return(value)
+	}
+
+	if (is.list(node)) {
+		if (!is.null(node$hex)) return(normalize_color(node$hex, fallback))
+		if (!is.null(node$value)) return(normalize_color(node$value, fallback))
+		if (!is.null(node$color)) return(normalize_color(node$color, fallback))
+		flatten <- unlist(node, use.names = FALSE)
+		if (length(flatten) > 0) return(normalize_color(as.character(flatten[[1]]), fallback))
+	}
+
+	fallback
+}
+
+extract_column_names <- function(node) {
+	if (is.null(node)) return(character())
+
+	if (is.character(node)) {
+		values <- as.character(node)
+		return(values[values != ""])
+	}
+
+	if (is.list(node) && !is.null(node$columns_name)) {
+		value <- as.character(node$columns_name)
+		return(value[value != ""])
+	}
+
+	if (is.list(node)) {
+		values <- unlist(lapply(node, extract_column_names), use.names = FALSE)
+		values <- as.character(values)
+		values <- values[values != ""]
+		return(unique(values))
+	}
+
+	character()
+}
+
+to_bool <- function(x, default = FALSE) {
+	if (is.null(x) || length(x) == 0) return(default)
+	if (is.logical(x)) return(isTRUE(x[[1]]))
+	if (is.numeric(x)) return(x[[1]] != 0)
+
+	if (is.character(x)) {
+		v <- tolower(trimws(x[[1]]))
+		if (v %in% c("true", "1", "yes", "y", "on")) return(TRUE)
+		if (v %in% c("false", "0", "no", "n", "off")) return(FALSE)
+	}
+
+	default
+}
+
+read_selected_matrix <- function(input_node, input_name) {
+	if (is.null(input_node$content)) {
+		stop(sprintf("%s.content 缺失", input_name))
+	}
+
+	file_path <- input_node$content
+	if (!file.exists(file_path)) {
+		stop(sprintf("%s 文件不存在: %s", input_name, file_path))
+	}
+
+	df <- readr::read_tsv(file_path, show_col_types = FALSE)
+	if (ncol(df) < 2) {
+		stop(sprintf("%s 文件列数不足，至少需要 2 列", input_name))
+	}
+
+	selected_cols <- extract_column_names(input_node$feature_vars)
+	if (length(selected_cols) == 0) {
+		stop(sprintf("%s 未选择任何 feature_vars 列", input_name))
+	}
+
+	selected_cols <- unique(selected_cols)
+	missing_cols <- setdiff(selected_cols, colnames(df))
+	if (length(missing_cols) > 0) {
+		stop(sprintf("%s 选择列在文件中不存在: %s", input_name, paste(missing_cols, collapse = ", ")))
+	}
+
+	feature_col <- colnames(df)[1]
+	matrix_df <- df %>%
+		dplyr::select(dplyr::all_of(c(feature_col, selected_cols))) %>%
+		dplyr::mutate(dplyr::across(dplyr::all_of(selected_cols), as.numeric)) %>%
+		dplyr::filter(!is.na(.data[[feature_col]]) & .data[[feature_col]] != "") %>%
+		dplyr::distinct(.data[[feature_col]], .keep_all = TRUE)
+
+	mat <- matrix_df %>%
+		tibble::column_to_rownames(feature_col) %>%
+		as.matrix()
+
+	storage.mode(mat) <- "numeric"
+	mat
+}
+
+compute_p_matrix <- function(x_mat_t, y_mat_t, method = "spearman") {
+	x_names <- colnames(x_mat_t)
+	y_names <- colnames(y_mat_t)
+
+	p_mat <- matrix(NA_real_, nrow = length(x_names), ncol = length(y_names),
+									dimnames = list(x_names, y_names))
+
+	for (i in seq_along(x_names)) {
+		x_vec <- x_mat_t[, i]
+		for (j in seq_along(y_names)) {
+			y_vec <- y_mat_t[, j]
+			ok <- !(is.na(x_vec) | is.na(y_vec))
+
+			if (sum(ok) < 3) {
+				p_mat[i, j] <- NA_real_
+			} else {
+				test_res <- tryCatch(
+					stats::cor.test(x_vec[ok], y_vec[ok], method = method),
+					error = function(e) NULL
+				)
+				p_mat[i, j] <- if (is.null(test_res)) NA_real_ else test_res$p.value
+			}
+		}
+	}
+
+	p_mat
+}
+
+build_star_matrix <- function(sig_matrix, level1 = 0.05, level2 = 0.01, level3 = 0.001) {
+	if (is.null(sig_matrix)) {
+		return(NULL)
+	}
+
+	c1 <- suppressWarnings(as.numeric(level1 %||% 0.05))
+	c2 <- suppressWarnings(as.numeric(level2 %||% 0.01))
+	c3 <- suppressWarnings(as.numeric(level3 %||% 0.001))
+	cutoffs <- sort(unique(c(c1, c2, c3)), decreasing = TRUE)
+	if (length(cutoffs) != 3 || any(is.na(cutoffs)) || any(cutoffs <= 0)) {
+		cutoffs <- c(0.05, 0.01, 0.001)
+	}
+
+	c1 <- cutoffs[[1]]
+	c2 <- cutoffs[[2]]
+	c3 <- cutoffs[[3]]
+
+	stars <- matrix("", nrow = nrow(sig_matrix), ncol = ncol(sig_matrix),
+									dimnames = dimnames(sig_matrix))
+
+	stars[!is.na(sig_matrix) & sig_matrix < c1] <- "*"
+	stars[!is.na(sig_matrix) & sig_matrix < c2] <- "**"
+	stars[!is.na(sig_matrix) & sig_matrix < c3] <- "***"
+
+	stars
+}
+
+args <- commandArgs(trailingOnly = TRUE)
+# params_path <- if (length(args) >= 1) args[[1]] else "params.json"
+# output_path <- if (length(args) >= 2) args[[2]] else "output"
+params_path <-"params.json"
+output_path <-  "output"
+
+if (!file.exists(params_path)) {
+	stop(sprintf("参数文件不存在: %s", params_path))
+}
+
+# dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
+
+data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
+
+x_mat <- read_selected_matrix(data$x_input, "x_input")
+y_mat <- read_selected_matrix(data$y_input, "y_input")
+
+common_samples <- intersect(colnames(x_mat), colnames(y_mat))
+if (length(common_samples) < 3) {
+	stop("x_input 与 y_input 的共同样本列少于 3 个，无法进行相关性与显著性检验")
+}
+
+x_mat <- x_mat[, common_samples, drop = FALSE]
+y_mat <- y_mat[, common_samples, drop = FALSE]
+
+x_mat_t <- t(x_mat)
+y_mat_t <- t(y_mat)
+
+corr_method <- as.character(data$corr_method %||% "spearman")
+if (!(corr_method %in% c("spearman", "pearson", "kendall"))) {
+	corr_method <- "spearman"
+}
+
+corr_matrix <- suppressWarnings(stats::cor(x_mat_t, y_mat_t, method = corr_method, use = "pairwise.complete.obs"))
+p_matrix <- compute_p_matrix(x_mat_t, y_mat_t, method = corr_method)
+
+adjust_method <- as.character(data$adjust_method %||% "BH")
+if (tolower(adjust_method) == "none") {
+	q_vector <- as.vector(p_matrix)
+} else {
+	q_vector <- stats::p.adjust(as.vector(p_matrix), method = adjust_method)
+}
+q_matrix <- matrix(q_vector, nrow = nrow(p_matrix), ncol = ncol(p_matrix), dimnames = dimnames(p_matrix))
+
+show_signif_marker <- to_bool(data$show_signif_marker, TRUE)
+signif_by <- as.character(data$signif_by %||% "p")
+sig_source <- if (tolower(signif_by) == "q") q_matrix else p_matrix
+star_matrix <- build_star_matrix(
+	sig_source,
+	level1 = data$sig_level_1 %||% 0.05,
+	level2 = data$sig_level_2 %||% 0.01,
+	level3 = data$sig_level_3 %||% 0.001
+)
+
+low_color <- normalize_color(data$low_color, "#4575B4")
+mid_color <- normalize_color(data$mid_color, "#FFFFFF")
+high_color <- normalize_color(data$high_color, "#D73027")
+plot_title <- as.character(data$plot_title %||% "Correlation Heatmap")
+
+heatmap_width <- suppressWarnings(as.numeric(data$heatmap_width %||% 12))
+heatmap_height <- suppressWarnings(as.numeric(data$heatmap_height %||% 10))
+if (is.na(heatmap_width) || heatmap_width <= 0) heatmap_width <- 12
+if (is.na(heatmap_height) || heatmap_height <= 0) heatmap_height <- 10
+
+cluster_rows <- to_bool(data$cluster_rows, TRUE)
+cluster_cols <- to_bool(data$cluster_cols, TRUE)
+show_rownames <- to_bool(data$heatmap_show_rownames, TRUE)
+show_colnames <- to_bool(data$heatmap_show_colnames, TRUE)
+
+readr::write_tsv(as.data.frame(corr_matrix) %>% tibble::rownames_to_column("name"),
+								 file.path(output_path, "corr_matrix.tsv"))
+readr::write_tsv(as.data.frame(p_matrix) %>% tibble::rownames_to_column("name"),
+								 file.path(output_path, "p_matrix.tsv"))
+readr::write_tsv(as.data.frame(q_matrix) %>% tibble::rownames_to_column("name"),
+								 file.path(output_path, "q_matrix.tsv"))
+
+plot_pdf <- file.path(output_path, "correlation_heatmap.pdf")
+grDevices::pdf(file = plot_pdf, width = heatmap_width, height = heatmap_height)
+pheatmap::pheatmap(
+	corr_matrix,
+	display_numbers = if (show_signif_marker) star_matrix else FALSE,
+	color = colorRampPalette(c(low_color, mid_color, high_color))(100),
+	cluster_rows = cluster_rows,
+	cluster_cols = cluster_cols,
+	show_rownames = show_rownames,
+	show_colnames = show_colnames,
+	fontsize_number = 10,
+	fontsize = 11,
+	main = plot_title,
+	border_color = NA
+)
+grDevices::dev.off()
+
+message(sprintf("Heatmap saved to: %s", plot_pdf))
