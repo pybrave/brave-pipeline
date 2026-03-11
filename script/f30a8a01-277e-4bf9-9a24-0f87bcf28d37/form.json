@@ -231,6 +231,61 @@
       "type": "BaseInput"
     },
     {
+      "name": "title_size",
+      "label": "Title Size",
+      "type": "BaseInputNumber",
+      "initialValue": 14,
+      "col": 12
+    },
+    {
+      "name": "title_position",
+      "label": "Title Position",
+      "type": "BaseSelect",
+      "initialValue": "left",
+      "data": [
+        {
+          "label": "Left",
+          "value": "left"
+        },
+        {
+          "label": "Center",
+          "value": "center"
+        },
+        {
+          "label": "Right",
+          "value": "right"
+        }
+      ]
+    },
+    {
+      "name": "legend_position",
+      "label": "Legend Position",
+      "type": "BaseSelect",
+      "initialValue": "top",
+      "data": [
+        {
+          "label": "Top",
+          "value": "top"
+        },
+        {
+          "label": "Bottom",
+          "value": "bottom"
+        },
+        {
+          "label": "Left",
+          "value": "left"
+        },
+        {
+          "label": "Right",
+          "value": "right"
+        },
+        {
+          "label": "Hide",
+          "value": "none"
+        }
+      ]
+    },
+    {
       "name": "output_name",
       "label": "Output File Name",
       "type": "BaseInput",

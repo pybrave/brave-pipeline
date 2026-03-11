@@ -154,7 +154,22 @@ group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "gro
 x_label <- params$x_label %||%  "" #feature_col
 y_label <- params$y_label %||%  "" #"abundance"
 plot_title <- params$title %||% ""
+title_size <- as.numeric(params$title_size %||% 14)
+title_position <- params$title_position %||% "left"
+legend_position <- params$legend_position %||% "top"
 output_name <- params$output_name %||% "boxplot"
+
+if (!(title_position %in% c("left", "center", "right"))) {
+	title_position <- "left"
+}
+if (!(legend_position %in% c("top", "bottom", "left", "right", "none"))) {
+	legend_position <- "top"
+}
+title_hjust <- dplyr::case_when(
+	title_position == "left" ~ 0,
+	title_position == "center" ~ 0.5,
+	TRUE ~ 1
+)
 
 x_var <- feature_col
 
@@ -325,13 +340,13 @@ add_common_style <- function(plot_in, title_text = "") {
 			axis.text.x = element_text(size = axis_text_size, angle = 45, hjust = 1, color = "#222222"),
 			axis.text.y = element_text(size = axis_text_size, color = "#222222"),
 			axis.title = element_text(size = axis_title_size, color = "#111111"),
-			legend.position = "top",
+			legend.position = legend_position,
 			legend.title = element_text(size = legend_title_size, face = "bold"),
 			legend.text = element_text(size = legend_text_size),
 			panel.grid = element_blank(),
 			axis.line = element_line(color = "#1A1A1A", linewidth = 0.5),
 			axis.ticks = element_line(color = "#1A1A1A", linewidth = 0.45),
-			plot.title = element_text(face = "bold", hjust = 0)
+			plot.title = element_text(size = title_size, face = "bold", hjust = title_hjust)
 		)
 }
 
