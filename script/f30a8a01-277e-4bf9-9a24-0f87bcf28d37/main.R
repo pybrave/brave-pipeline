@@ -178,13 +178,61 @@ base_plot <- ggplot(long_df, aes(x = .data[[x_var]], y = value, color = treatmen
 plot_obj <- switch(
 	plot_type,
 	"violin" = {
+		violin_dodge_width <- 0.75
 		base_plot +
-			geom_violin(trim = FALSE, alpha = 0.35) +
-			geom_jitter(width = 0.15, size = point_size, alpha = point_alpha)
+			geom_violin(
+				trim = FALSE,
+				alpha = 0.35,
+				width = 0.7,
+				position = position_dodge(width = violin_dodge_width)
+			) +
+			geom_point(
+				position = position_jitterdodge(
+					jitter.width = 0.12,
+					dodge.width = violin_dodge_width,
+					seed = 1
+				),
+				size = point_size,
+				alpha = point_alpha
+			)
 	},
 	"scatter" = {
+		scatter_dodge_width <- 0.75
 		base_plot +
-			geom_jitter(width = 0.2, size = point_size, alpha = point_alpha)
+			geom_point(
+				position = position_jitterdodge(
+					jitter.width = 0.14,
+					dodge.width = scatter_dodge_width,
+					seed = 1
+				),
+				size = point_size,
+				alpha = point_alpha
+			)
+	},
+	"half_violin_scatter" = {
+		if (!requireNamespace("ggdist", quietly = TRUE)) {
+			stop("plot_type=half_violin_scatter 需要安装 ggdist 包")
+		}
+
+		half_dodge_width <- 0.75
+		base_plot +
+			ggdist::stat_halfeye(
+				adjust = 0.7,
+				width = 0.6,
+				.width = 0,
+				justification = 0.12,
+				point_colour = NA,
+				side = "left",
+				alpha = 0.75,
+				position = position_dodge(width = half_dodge_width)
+			) +
+			ggdist::stat_dots(
+				side = "right",
+				justification = -0.05,
+				dotsize = 0.6,
+				alpha = point_alpha,
+				position = position_dodge(width = half_dodge_width)
+			)
 	},
 	"boxplotV1" ={
         box_dodge_width <- 0.75
@@ -317,13 +365,14 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 }
 
 add_common_style <- function(plot_in, title_text = "") {
-	is_boxplot <- plot_type %in% c("boxplot", "boxplotV1")
+	# is_boxplot <- plot_type %in% c("boxplot", "boxplotV1")
 
-	base_theme <- if (is_boxplot) {
-		theme_classic(base_size = 12)
-	} else {
-		theme_bw(base_size = 12)
-	}
+	# base_theme <- if (is_boxplot) {
+	# 	theme_classic(base_size = 12)
+	# } else {
+	# 	theme_bw(base_size = 12)
+	# }
+	base_theme <-  theme_classic(base_size = 12)
 
 	plot_in +
 		scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +

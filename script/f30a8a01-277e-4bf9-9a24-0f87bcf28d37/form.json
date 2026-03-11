@@ -54,6 +54,10 @@
           "value": "scatter"
         },
         {
+          "label": "Half Violin + Scatter (ggdist)",
+          "value": "half_violin_scatter"
+        },
+        {
           "label": "Boxplot",
           "value": "boxplot"
         }
