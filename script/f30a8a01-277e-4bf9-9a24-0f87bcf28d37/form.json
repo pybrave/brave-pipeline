@@ -78,6 +78,10 @@
         {
           "label": "split",
           "value": "split"
+        },
+        {
+          "label": "none",
+          "value": "none"
         }
       ]
     },
@@ -114,6 +118,50 @@
       ]
     },
     {
+      "name": "stat_display",
+      "label": "Stat Display",
+      "type": "BaseSelect",
+      "initialValue": "value",
+      "depends": [
+        {
+          "name": "show_stats",
+          "value": true
+        }
+      ],
+      "data": [
+        {
+          "label": "p=XXX / q=XXX",
+          "value": "value"
+        },
+        {
+          "label": "Significance Stars",
+          "value": "star"
+        }
+      ]
+    },
+    {
+      "name": "stat_position",
+      "label": "Stat Position",
+      "type": "BaseSelect",
+      "initialValue": "group_top",
+      "depends": [
+        {
+          "name": "show_stats",
+          "value": true
+        }
+      ],
+      "data": [
+        {
+          "label": "Each Group Top",
+          "value": "group_top"
+        },
+        {
+          "label": "Uniform Top",
+          "value": "uniform_top"
+        }
+      ]
+    },
+    {
       "name": "point_size",
       "label": "Point Size",
       "type": "BaseInputNumber",
@@ -128,14 +176,44 @@
       "col": 12
     },
     {
+      "name": "axis_text_size",
+      "label": "Axis Text Size",
+      "type": "BaseInputNumber",
+      "initialValue": 10,
+      "col": 12
+    },
+    {
+      "name": "axis_title_size",
+      "label": "Axis Title Size",
+      "type": "BaseInputNumber",
+      "initialValue": 12,
+      "col": 12
+    },
+    {
+      "name": "legend_text_size",
+      "label": "Legend Text Size",
+      "type": "BaseInputNumber",
+      "initialValue": 9,
+      "col": 12
+    },
+    {
+      "name": "legend_title_size",
+      "label": "Legend Title Size",
+      "type": "BaseInputNumber",
+      "initialValue": 10,
+      "col": 12
+    },
+    {
       "name": "group1_color",
       "label": "Group1 Color",
+      "required": true,
       "type": "BaseColorPicker",
       "col": 12
     },
     {
         "name": "group2_color",
         "label": "Group2 Color",
+        "required": true,
         "type": "BaseColorPicker",
         "col": 12
     },{

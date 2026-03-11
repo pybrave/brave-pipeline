@@ -67,6 +67,22 @@ safe_color <- function(color_value, fallback, label) {
 	color_value
 }
 
+safe_max <- function(x, fallback = 0) {
+	mx <- suppressWarnings(max(x, na.rm = TRUE))
+	if (!is.finite(mx)) fallback else mx
+}
+
+significance_to_star <- function(x) {
+	dplyr::case_when(
+		is.na(x) ~ "ns",
+		x < 1e-4 ~ "****",
+		x < 1e-3 ~ "***",
+		x < 1e-2 ~ "**",
+		x < 0.05 ~ "*",
+		TRUE ~ "ns"
+	)
+}
+
 sanitize_filename <- function(x) {
 	x <- as.character(x)
 	x <- stringr::str_trim(x)
@@ -124,8 +140,14 @@ plot_type <- params$plot_type %||% "violin"
 panel_type <- params$panel_type %||% "free_x"
 show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
+stat_display <- params$stat_display %||% "value"
+stat_position <- params$stat_position %||% "group_top"
 point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
+axis_text_size <- as.numeric(params$axis_text_size %||% 10)
+axis_title_size <- as.numeric(params$axis_title_size %||% 12)
+legend_text_size <- as.numeric(params$legend_text_size %||% 9)
+legend_title_size <- as.numeric(params$legend_title_size %||% 10)
 # CNS-like defaults (close to commonly used NPG palette)
 group1_color <- safe_color(normalize_color(params$group1_color), "#4DBBD5", "group1_color")
 group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "group2_color")
@@ -206,31 +228,66 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 		dplyr::select(dplyr::all_of(stats_source_cols)) %>%
 		dplyr::distinct()
 
-	if (all(c(p_col, q_col) %in% colnames(stats_df))) {
-		stats_df <- stats_df %>%
-			dplyr::mutate(
-				stat_text = dplyr::case_when(
-					stat_label == "p" ~ sprintf("p=%.3g", .data[[p_col]]),
-					stat_label == "q" ~ sprintf("q=%.3g", .data[[q_col]]),
-					TRUE ~ sprintf("p=%.3g\nq=%.3g", .data[[p_col]], .data[[q_col]])
+	if (isTRUE(stat_display == "star")) {
+		if (all(c(p_col, q_col) %in% colnames(stats_df))) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(
+					stat_text = dplyr::case_when(
+						stat_label == "p" ~ significance_to_star(.data[[p_col]]),
+						stat_label == "q" ~ significance_to_star(.data[[q_col]]),
+						TRUE ~ sprintf("p:%s\nq:%s", significance_to_star(.data[[p_col]]), significance_to_star(.data[[q_col]]))
+					)
 				)
-			)
-	} else if (p_col %in% colnames(stats_df)) {
-		stats_df <- stats_df %>%
-			dplyr::mutate(stat_text = sprintf("p=%.3g", .data[[p_col]]))
-	} else if (q_col %in% colnames(stats_df)) {
-		stats_df <- stats_df %>%
-			dplyr::mutate(stat_text = sprintf("q=%.3g", .data[[q_col]]))
+		} else if (p_col %in% colnames(stats_df)) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(stat_text = significance_to_star(.data[[p_col]]))
+		} else if (q_col %in% colnames(stats_df)) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(stat_text = significance_to_star(.data[[q_col]]))
+		} else {
+			return(plot_in)
+		}
 	} else {
-		return(plot_in)
+		if (all(c(p_col, q_col) %in% colnames(stats_df))) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(
+					stat_text = dplyr::case_when(
+						stat_label == "p" ~ sprintf("p=%.3g", .data[[p_col]]),
+						stat_label == "q" ~ sprintf("q=%.3g", .data[[q_col]]),
+						TRUE ~ sprintf("p=%.3g\nq=%.3g", .data[[p_col]], .data[[q_col]])
+					)
+				)
+		} else if (p_col %in% colnames(stats_df)) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(stat_text = sprintf("p=%.3g", .data[[p_col]]))
+		} else if (q_col %in% colnames(stats_df)) {
+			stats_df <- stats_df %>%
+				dplyr::mutate(stat_text = sprintf("q=%.3g", .data[[q_col]]))
+		} else {
+			return(plot_in)
+		}
 	}
 
-	y_max <- data_for_plot %>%
-		dplyr::group_by(dplyr::across(dplyr::all_of(join_cols))) %>%
-		dplyr::summarise(y_pos = max(value, na.rm = TRUE) * 1.05, .groups = "drop")
+	if (isTRUE(stat_position == "uniform_top")) {
+		if (!is.null(panel_col) && panel_col %in% colnames(data_for_plot) && panel_col %in% colnames(stats_df)) {
+			y_max <- data_for_plot %>%
+				dplyr::group_by(.data[[panel_col]]) %>%
+				dplyr::summarise(y_pos = safe_max(value) * 1.08, .groups = "drop")
 
-	stats_df <- stats_df %>%
-		dplyr::left_join(y_max, by = join_cols)
+			stats_df <- stats_df %>%
+				dplyr::left_join(y_max, by = panel_col)
+		} else {
+			stats_df <- stats_df %>%
+				dplyr::mutate(y_pos = safe_max(data_for_plot$value) * 1.08)
+		}
+	} else {
+		y_max <- data_for_plot %>%
+			dplyr::group_by(dplyr::across(dplyr::all_of(join_cols))) %>%
+			dplyr::summarise(y_pos = safe_max(value) * 1.05, .groups = "drop")
+
+		stats_df <- stats_df %>%
+			dplyr::left_join(y_max, by = join_cols)
+	}
 
 	plot_in +
 		geom_text(
@@ -263,12 +320,12 @@ add_common_style <- function(plot_in) {
 		) +
 		base_theme +
 		theme(
-			axis.text.x = element_text(angle = 45, hjust = 1, color = "#222222"),
-			axis.text.y = element_text(color = "#222222"),
-			axis.title = element_text(color = "#111111"),
+			axis.text.x = element_text(size = axis_text_size, angle = 45, hjust = 1, color = "#222222"),
+			axis.text.y = element_text(size = axis_text_size, color = "#222222"),
+			axis.title = element_text(size = axis_title_size, color = "#111111"),
 			legend.position = "top",
-			legend.title = element_text(size = 10, face = "bold"),
-			legend.text = element_text(size = 9),
+			legend.title = element_text(size = legend_title_size, face = "bold"),
+			legend.text = element_text(size = legend_text_size),
 			panel.grid = element_blank(),
 			axis.line = element_line(color = "#1A1A1A", linewidth = 0.5),
 			axis.ticks = element_line(color = "#1A1A1A", linewidth = 0.45),

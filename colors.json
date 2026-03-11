@@ -1,0 +1,50 @@
+{
+    "control": "#67A9CC",
+    "treatment": "#DD9B26",
+    "colors": [
+        {
+            "label": "control",
+            "colors": [
+                "#67A9CC"
+            ]
+        },
+        {
+            "label": "treatment",
+            "colors": [
+                "#DD9B26"
+            ]
+        },
+        {
+            "label": "heatmap",
+            "colors": [
+                "#9BBBE1",
+                "#FFFFFF",
+                "#F09BA0"
+            ]
+        }
+    ]
+}
+
+
+{
+    "colors": [
+        {
+            "label": "CM",
+            "colors": [
+                "#C4261E"
+            ]
+        },
+        {
+            "label": "SM",
+            "colors": [
+                "#1C8140"
+            ]
+        },
+        {
+            "label": "CS",
+            "colors": [
+                "#0C629D"
+            ]
+        },
+    ]
+}
