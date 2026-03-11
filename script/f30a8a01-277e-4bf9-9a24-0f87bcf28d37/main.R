@@ -1,4 +1,6 @@
 library(tidyverse)
+library(ggdist)
+library(gghalves)
 
 `%||%` <- function(x, y) {
 	if (is.null(x) || length(x) == 0) y else x
@@ -210,29 +212,34 @@ plot_obj <- switch(
 			)
 	},
 	"half_violin_scatter" = {
-		if (!requireNamespace("ggdist", quietly = TRUE)) {
-			stop("plot_type=half_violin_scatter 需要安装 ggdist 包")
-		}
+		# if (!requireNamespace("ggdist", quietly = TRUE)) {
+		# 	stop("plot_type=half_violin_scatter 需要安装 ggdist 包")
+		# }
 
-		half_dodge_width <- 0.75
-		base_plot +
-			ggdist::stat_halfeye(
-				adjust = 0.7,
-				width = 0.6,
-				.width = 0,
-				justification = 0.12,
-				point_colour = NA,
-				side = "left",
-				alpha = 0.75,
-				position = position_dodge(width = half_dodge_width)
-			) +
-			ggdist::stat_dots(
-				side = "right",
-				justification = -0.05,
-				dotsize = 0.6,
-				alpha = point_alpha,
-				position = position_dodge(width = half_dodge_width)
-			)
+	  half_dodge_width <- 0.75
+	  
+	  
+	  base_plot +
+	    # geom_dots()
+  	  geom_half_violin( position = "dodge") + 
+      geom_dotplot(binaxis = "y", method="histodot", stackdir="up", position = "dodge")
+	    # ggdist::stat_halfeye(
+	    #   adjust = 0.7,
+	    #   width = 0.55,
+	    #   .width = 0,
+	    #   justification = 0,
+	    #   point_colour = NA,
+	    #   side = "left",
+	    #   alpha = 0.7,
+	    #   position = ggdist::position_dodgejust(width = half_dodge_width)
+	    # ) +
+	    # ggdist::stat_dots(
+	    #   side = "right",
+	    #   justification = 0,
+	    #   dotsize = 0.6,
+	    #   alpha = point_alpha,
+	    #   position = ggdist::position_dodgejust(width = half_dodge_width)
+	    # )
 	},
 	"boxplotV1" ={
         box_dodge_width <- 0.75
