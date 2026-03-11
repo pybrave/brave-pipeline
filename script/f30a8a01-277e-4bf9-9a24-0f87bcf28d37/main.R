@@ -105,6 +105,8 @@ df <- readr::read_tsv(file_path, show_col_types = FALSE)
 
 feature_col <- extract_single_column(input_file$x_var, default = "Row.names")
 panel_col <- extract_single_column(input_file$panel_var, default = NULL)
+p_col_selected <- extract_single_column(input_file$p_col, default = "P_value")
+q_col_selected <- extract_single_column(input_file$q_col, default = "Qvalue")
 # y_label_default <- extract_single_column(input_file$y_var, default = "abundance")
 
 group1_cols <- extract_column_names(input_file$group1_vars)
@@ -287,6 +289,12 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 
 	p_col <- "P_value"
 	q_col <- "Qvalue"
+	if (!is.null(p_col_selected) && nzchar(p_col_selected)) {
+		p_col <- p_col_selected
+	}
+	if (!is.null(q_col_selected) && nzchar(q_col_selected)) {
+		q_col <- q_col_selected
+	}
 
 	join_cols <- feature_col
 	if (!is.null(panel_col) && panel_col %in% colnames(source_df) && panel_col %in% colnames(data_for_plot)) {
