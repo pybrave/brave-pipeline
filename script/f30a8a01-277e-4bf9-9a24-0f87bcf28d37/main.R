@@ -126,8 +126,9 @@ show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
 point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
-group1_color <- safe_color(normalize_color(params$group1_color), "#1f77b4", "group1_color")
-group2_color <- safe_color(normalize_color(params$group2_color), "#ff7f0e", "group2_color")
+# CNS-like defaults (close to commonly used NPG palette)
+group1_color <- safe_color(normalize_color(params$group1_color), "#4DBBD5", "group1_color")
+group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "group2_color")
 x_label <- params$x_label %||%  "" #feature_col
 y_label <- params$y_label %||%  "" #"abundance"
 output_name <- params$output_name %||% "boxplot"
@@ -160,14 +161,18 @@ plot_obj <- switch(
 		box_dodge_width <- 0.75
 		base_plot +
 			geom_boxplot(
-				outlier.alpha = 0.3,
-				alpha = 0.35,
+				outlier.shape = NA,
+				width = 0.62,
+				size = 0.55,
+				alpha = 0.85,
 				position = position_dodge(width = box_dodge_width)
 			) +
 			geom_point(
 				position = position_jitterdodge(jitter.width = 0.15, dodge.width = box_dodge_width),
-				size = point_size,
-				alpha = point_alpha
+				shape = 21,
+				stroke = 0.25,
+				size = point_size * 0.95,
+				alpha = point_alpha * 0.9
 			)
 	},
 	{
@@ -233,12 +238,20 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 			aes(x = .data[[feature_col]], y = y_pos, label = stat_text),
 			inherit.aes = FALSE,
 			size = 3,
-			angle = 90,
+			# angle = 90,
 			vjust = -0.2
 		)
 }
 
 add_common_style <- function(plot_in) {
+	is_boxplot <- plot_type %in% c("boxplot", "boxplotV1")
+
+	base_theme <- if (is_boxplot) {
+		theme_classic(base_size = 12)
+	} else {
+		theme_bw(base_size = 12)
+	}
+
 	plot_in +
 		scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
 		scale_fill_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
@@ -248,10 +261,18 @@ add_common_style <- function(plot_in) {
 			color = "Group",
 			fill = "Group"
 		) +
-		theme_bw(base_size = 12) +
+		base_theme +
 		theme(
-			axis.text.x = element_text(angle = 45, hjust = 1),
-			legend.position = "top"
+			axis.text.x = element_text(angle = 45, hjust = 1, color = "#222222"),
+			axis.text.y = element_text(color = "#222222"),
+			axis.title = element_text(color = "#111111"),
+			legend.position = "top",
+			legend.title = element_text(size = 10, face = "bold"),
+			legend.text = element_text(size = 9),
+			panel.grid = element_blank(),
+			axis.line = element_line(color = "#1A1A1A", linewidth = 0.5),
+			axis.ticks = element_line(color = "#1A1A1A", linewidth = 0.45),
+			plot.title = element_text(face = "bold", hjust = 0)
 		)
 }
 
