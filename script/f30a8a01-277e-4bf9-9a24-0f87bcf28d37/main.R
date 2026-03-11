@@ -153,6 +153,7 @@ group1_color <- safe_color(normalize_color(params$group1_color), "#4DBBD5", "gro
 group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "group2_color")
 x_label <- params$x_label %||%  "" #feature_col
 y_label <- params$y_label %||%  "" #"abundance"
+plot_title <- params$title %||% ""
 output_name <- params$output_name %||% "boxplot"
 
 x_var <- feature_col
@@ -300,7 +301,7 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 		)
 }
 
-add_common_style <- function(plot_in) {
+add_common_style <- function(plot_in, title_text = "") {
 	is_boxplot <- plot_type %in% c("boxplot", "boxplotV1")
 
 	base_theme <- if (is_boxplot) {
@@ -315,6 +316,7 @@ add_common_style <- function(plot_in) {
 		labs(
 			x = x_label,
 			y = y_label,
+			title = title_text,
 			color = "Group",
 			fill = "Group"
 		) +
@@ -342,7 +344,14 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		panel_source_df <- df %>% dplyr::filter(.data[[panel_col]] == panel_value)
 		panel_plot <- plot_obj %+% panel_data
 		panel_plot <- add_stats_layer(panel_plot, panel_data, panel_source_df)
-		panel_plot <- add_common_style(panel_plot)
+
+		panel_prefix <- as.character(panel_value)
+		panel_title <- if (nzchar(plot_title)) {
+			stringr::str_c(panel_prefix, " - ", plot_title)
+		} else {
+			panel_prefix
+		}
+		panel_plot <- add_common_style(panel_plot, panel_title)
 
 		panel_suffix <- sanitize_filename(panel_value)
 		output_path <- str_glue("output/{output_name}_{panel_suffix}.pdf")
@@ -355,7 +364,7 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	}
 
 	plot_obj <- add_stats_layer(plot_obj, long_df, df)
-	plot_obj <- add_common_style(plot_obj)
+	plot_obj <- add_common_style(plot_obj, plot_title)
 
 	output_path <- str_glue("output/{output_name}.pdf")
 	ggsave(filename = output_path, plot = plot_obj, width = 12, height = 7, dpi = 300)

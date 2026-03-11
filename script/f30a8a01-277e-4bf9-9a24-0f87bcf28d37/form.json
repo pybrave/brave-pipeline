@@ -226,6 +226,11 @@
       "type": "BaseInput"
     },
     {
+      "name": "title",
+      "label": "Plot Title",
+      "type": "BaseInput"
+    },
+    {
       "name": "output_name",
       "label": "Output File Name",
       "type": "BaseInput",
