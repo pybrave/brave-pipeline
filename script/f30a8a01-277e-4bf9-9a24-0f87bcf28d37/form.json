@@ -62,7 +62,8 @@
           "value": "boxplot"
         }
       ]
-    },{
+    },
+    {
       "name": "panel_type",
       "label": "Panel Type",
       "type": "BaseSelect",
@@ -208,6 +209,34 @@
       "col": 12
     },
     {
+      "name": "legend_title_text",
+      "label": "Legend Title Text",
+      "type": "BaseInput",
+      "initialValue": "Group"
+    },
+    {
+      "name": "legend_group1_text",
+      "label": "Legend Group1 Text",
+      "type": "BaseInput",
+      "required": true,
+      "col": 12,
+      "initialValue": "group1"
+    },
+    {
+      "name": "legend_group2_text",
+      "label": "Legend Group2 Text",
+      "type": "BaseInput",
+      "required": true,
+      "col": 12,
+      "initialValue": "group2"
+    },
+    {
+      "name": "legend_other_text",
+      "label": "Legend Other Text",
+      "type": "BaseInput",
+      "initialValue": "other"
+    },
+    {
       "name": "group1_color",
       "label": "Group1 Color",
       "required": true,
@@ -215,16 +244,18 @@
       "col": 12
     },
     {
-        "name": "group2_color",
-        "label": "Group2 Color",
-        "required": true,
-        "type": "BaseColorPicker",
-        "col": 12
-    },{
+      "name": "group2_color",
+      "label": "Group2 Color",
+      "required": true,
+      "type": "BaseColorPicker",
+      "col": 12
+    },
+    {
       "name": "x_label",
       "label": "X label",
       "type": "BaseInput"
-    },{
+    },
+    {
       "name": "y_label",
       "label": "Y label",
       "type": "BaseInput"

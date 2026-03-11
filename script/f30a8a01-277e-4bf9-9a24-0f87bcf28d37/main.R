@@ -150,6 +150,10 @@ axis_text_size <- as.numeric(params$axis_text_size %||% 10)
 axis_title_size <- as.numeric(params$axis_title_size %||% 12)
 legend_text_size <- as.numeric(params$legend_text_size %||% 9)
 legend_title_size <- as.numeric(params$legend_title_size %||% 10)
+legend_title_text <- params$legend_title_text %||% "Group"
+legend_group1_text <- params$legend_group1_text %||% "group1"
+legend_group2_text <- params$legend_group2_text %||% "group2"
+legend_other_text <- params$legend_other_text %||% "other"
 # CNS-like defaults (close to commonly used NPG palette)
 group1_color <- safe_color(normalize_color(params$group1_color), "#4DBBD5", "group1_color")
 group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "group2_color")
@@ -382,14 +386,22 @@ add_common_style <- function(plot_in, title_text = "") {
 	base_theme <-  theme_classic(base_size = 12)
 
 	plot_in +
-		scale_color_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
-		scale_fill_manual(values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD")) +
+		scale_color_manual(
+			values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD"),
+			breaks = c("group1", "group2", "other"),
+			labels = c(legend_group1_text, legend_group2_text, legend_other_text)
+		) +
+		scale_fill_manual(
+			values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD"),
+			breaks = c("group1", "group2", "other"),
+			labels = c(legend_group1_text, legend_group2_text, legend_other_text)
+		) +
 		labs(
 			x = x_label,
 			y = y_label,
 			title = title_text,
-			color = "Group",
-			fill = "Group"
+			color = legend_title_text,
+			fill = legend_title_text
 		) +
 		base_theme +
 		theme(
