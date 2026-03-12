@@ -146,6 +146,13 @@ sanitize_filename <- function(x) {
 	ifelse(x == "", "panel", x)
 }
 
+format_vector_for_info <- function(x) {
+	x <- as.character(x)
+	x <- x[!is.na(x) & x != ""]
+	if (length(x) == 0) return("none")
+	paste(x, collapse = ", ")
+}
+
 params <- jsonlite::fromJSON("params.json", simplifyVector = FALSE)
 
 input_file <- params$input_file
@@ -224,6 +231,9 @@ title_size <- as.numeric(params$title_size %||% 14)
 title_position <- params$title_position %||% "left"
 legend_position <- params$legend_position %||% "top"
 output_name <- params$output_name %||% "boxplot"
+output_dir <- "output"
+dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+plot_outputs <- character()
 
 if (!(title_position %in% c("left", "center", "right"))) {
 	title_position <- "left"
@@ -538,8 +548,9 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		panel_plot <- add_common_style(panel_plot, panel_title)
 
 		panel_suffix <- sanitize_filename(panel_value)
-		output_path <- str_glue("output/{output_name}_{panel_suffix}.pdf")
+		output_path <- str_glue("{output_dir}/{output_name}_{panel_suffix}.pdf")
 		ggsave(filename = output_path, plot = panel_plot, width = plot_width, height = plot_height, dpi = 300)
+		plot_outputs <- c(plot_outputs, output_path)
 		message(sprintf("Plot saved to: %s", output_path))
 	}
 } else {
@@ -550,7 +561,100 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	plot_obj <- add_stats_layer(plot_obj, long_df, df)
 	plot_obj <- add_common_style(plot_obj, plot_title)
 
-	output_path <- str_glue("output/{output_name}.pdf")
+	output_path <- str_glue("{output_dir}/{output_name}.pdf")
 	ggsave(filename = output_path, plot = plot_obj, width = plot_width, height = plot_height, dpi = 300)
+	plot_outputs <- c(plot_outputs, output_path)
 	message(sprintf("Plot saved to: %s", output_path))
 }
+
+stats_df <- df
+if (!("P_value" %in% colnames(stats_df))) stats_df$P_value <- NA_real_
+if (!("Qvalue" %in% colnames(stats_df))) stats_df$Qvalue <- NA_real_
+
+long_value_n <- nrow(long_df)
+value_na_count <- sum(is.na(long_df$value))
+value_non_na_count <- sum(!is.na(long_df$value))
+feature_count <- dplyr::n_distinct(long_df[[feature_col]])
+panel_count <- if (!is.null(panel_col) && panel_col %in% colnames(long_df)) {
+	dplyr::n_distinct(long_df[[panel_col]])
+} else {
+	1L
+}
+group1_point_count <- sum(long_df$treatment == "group1", na.rm = TRUE)
+group2_point_count <- sum(long_df$treatment == "group2", na.rm = TRUE)
+other_point_count <- sum(long_df$treatment == "other", na.rm = TRUE)
+
+p_valid_count <- sum(!is.na(stats_df$P_value))
+q_valid_count <- sum(!is.na(stats_df$Qvalue))
+p_lt_0_05_count <- sum(!is.na(stats_df$P_value) & stats_df$P_value < 0.05)
+q_lt_0_05_count <- sum(!is.na(stats_df$Qvalue) & stats_df$Qvalue < 0.05)
+
+info_lines <- c(
+	"# Plot Output Report",
+	"",
+	"## Run Info",
+	sprintf("- run_time: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
+	sprintf("- params_path: %s", "params.json"),
+	# sprintf("- input_file: %s", file_path),
+	# sprintf("- output_dir: %s", output_dir),
+	# sprintf("- output_plots: %s", format_vector_for_info(plot_outputs)),
+	"",
+	"## Selected Columns",
+	sprintf("- feature_col: %s", feature_col),
+	sprintf("- panel_col: %s", as.character(panel_col %||% "none")),
+	sprintf("- selected_sample_count: %d", length(selected_samples)),
+	sprintf("- selected_samples: %s", format_vector_for_info(selected_samples)),
+	sprintf("- group1_sample_count: %d", length(group1_cols)),
+	sprintf("- group1_samples: %s", format_vector_for_info(group1_cols)),
+	sprintf("- group2_sample_count: %d", length(group2_cols)),
+	sprintf("- group2_samples: %s", format_vector_for_info(group2_cols)),
+	"",
+	"## Plot Params",
+	sprintf("- plot_type: %s", plot_type),
+	sprintf("- panel_type: %s", panel_type),
+	sprintf("- sig_mode: %s", sig_mode),
+	sprintf("- qvalue_method: %s", qvalue_method),
+	sprintf("- show_stats: %s", show_stats),
+	sprintf("- stat_label: %s", stat_label),
+	sprintf("- stat_display: %s", stat_display),
+	sprintf("- stat_position: %s", stat_position),
+	sprintf("- point_size: %s", point_size),
+	sprintf("- point_alpha: %s", point_alpha),
+	sprintf("- plot_width: %s", plot_width),
+	sprintf("- plot_height: %s", plot_height),
+	sprintf("- x_text_angle: %s", x_text_angle),
+	sprintf("- axis_text_size: %s", axis_text_size),
+	sprintf("- axis_title_size: %s", axis_title_size),
+	sprintf("- legend_text_size: %s", legend_text_size),
+	sprintf("- legend_title_size: %s", legend_title_size),
+	sprintf("- legend_position: %s", legend_position),
+	sprintf("- legend_title_text: %s", legend_title_text),
+	sprintf("- legend_group1_text: %s", legend_group1_text),
+	sprintf("- legend_group2_text: %s", legend_group2_text),
+	sprintf("- legend_other_text: %s", legend_other_text),
+	sprintf("- group1_color: %s", group1_color),
+	sprintf("- group2_color: %s", group2_color),
+	sprintf("- x_label: %s", x_label),
+	sprintf("- y_label: %s", y_label),
+	sprintf("- title: %s", plot_title),
+	sprintf("- title_size: %s", title_size),
+	sprintf("- title_position: %s", title_position),
+	sprintf("- output_name: %s", output_name),
+	"",
+	"## Plot Stats",
+	sprintf("- input_row_count: %d", nrow(df)),
+	sprintf("- feature_count: %d", feature_count),
+	sprintf("- panel_count: %d", panel_count),
+	sprintf("- long_value_count_total: %d", long_value_n),
+	sprintf("- long_value_count_non_na: %d", value_non_na_count),
+	sprintf("- long_value_count_na: %d", value_na_count),
+	sprintf("- point_count_group1: %d", group1_point_count),
+	sprintf("- point_count_group2: %d", group2_point_count),
+	sprintf("- point_count_other: %d", other_point_count),
+	sprintf("- p_value_valid_count: %d", p_valid_count),
+	sprintf("- q_value_valid_count: %d", q_valid_count),
+	sprintf("- p_value_lt_0.05_count: %d", p_lt_0_05_count),
+	sprintf("- q_value_lt_0.05_count: %d", q_lt_0_05_count)
+)
+
+readr::write_lines(info_lines, file.path(output_dir, "output.md"))

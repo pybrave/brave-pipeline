@@ -34,3 +34,8 @@ colnames(df)
     "type":"Divider",
     "text":"xxxx"
 },
+
+请将这个脚本当前脚本运行参数以及一些其它信息生成的output.md整理成编码规范，写到skill/instruct.md中形成llm的skill，以便在后续其它脚本需要生成类似逻辑时作为context给llm使用
+
+
+请参考 script/d31f5abb-6ef2-43cd-aeba-14fea48f4c8c/main.R， 修改脚本,将脚本运行参数，与绘图相关的统计信息写入markdown格式的output/output.md文件中
