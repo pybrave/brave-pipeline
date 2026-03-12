@@ -47,6 +47,30 @@
       ]
     },
     {
+      "name": "x_sample_replace_from",
+      "label": "x sample replace from (regex, ; separated)",
+      "type": "BaseInput",
+      "initialValue": ""
+    },
+    {
+      "name": "x_sample_replace_to",
+      "label": "x sample replace to (; separated)",
+      "type": "BaseInput",
+      "initialValue": ""
+    },
+    {
+      "name": "y_sample_replace_from",
+      "label": "y sample replace from (regex, ; separated)",
+      "type": "BaseInput",
+      "initialValue": ""
+    },
+    {
+      "name": "y_sample_replace_to",
+      "label": "y sample replace to (; separated)",
+      "type": "BaseInput",
+      "initialValue": ""
+    },
+    {
       "name": "corr_method",
       "label": "correlation method",
       "type": "BaseSelect",

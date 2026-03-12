@@ -89,6 +89,56 @@ format_vector_for_info <- function(x) {
 	paste(x, collapse = ", ")
 }
 
+split_rule_tokens <- function(x) {
+	if (is.null(x) || length(x) == 0) return(character())
+	v <- as.character(x[[1]])
+	if (is.na(v) || trimws(v) == "") return(character())
+	tokens <- strsplit(v, ";", fixed = TRUE)[[1]]
+	tokens <- trimws(tokens)
+	tokens[tokens != ""]
+}
+
+apply_feature_replace_rules <- function(feature_names, from_rules, to_rules) {
+	from_vec <- split_rule_tokens(from_rules)
+	to_vec <- split_rule_tokens(to_rules)
+
+	if (length(from_vec) == 0) {
+		return(list(
+			values = feature_names,
+			rule_count = 0,
+			from = character(),
+			to = character(),
+			changed_count = 0
+		))
+	}
+
+	if (length(to_vec) < length(from_vec)) {
+		to_vec <- c(to_vec, rep("", length(from_vec) - length(to_vec)))
+	}
+	if (length(to_vec) > length(from_vec)) {
+		to_vec <- to_vec[seq_along(from_vec)]
+	}
+
+	old_values <- feature_names
+	new_values <- feature_names
+	for (i in seq_along(from_vec)) {
+		new_values <- gsub(from_vec[[i]], to_vec[[i]], new_values, perl = TRUE)
+	}
+
+	list(
+		values = new_values,
+		rule_count = length(from_vec),
+		from = from_vec,
+		to = to_vec,
+		changed_count = sum(old_values != new_values)
+	)
+}
+
+pick_param <- function(primary, fallback = NULL) {
+	if (!is.null(primary) && length(primary) > 0) return(primary)
+	fallback
+}
+
 read_selected_matrix <- function(input_node, input_name) {
 	if (is.null(input_node$content)) {
 		stop(sprintf("%s.content 缺失", input_name))
@@ -201,6 +251,25 @@ data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 
 x_mat <- read_selected_matrix(data$x_input, "x_input")
 y_mat <- read_selected_matrix(data$y_input, "y_input")
+
+x_sample_replace_from <- pick_param(data$x_sample_replace_from, data$x_feature_replace_from)
+x_sample_replace_to <- pick_param(data$x_sample_replace_to, data$x_feature_replace_to)
+y_sample_replace_from <- pick_param(data$y_sample_replace_from, data$y_feature_replace_from)
+y_sample_replace_to <- pick_param(data$y_sample_replace_to, data$y_feature_replace_to)
+
+x_replace_res <- apply_feature_replace_rules(
+	colnames(x_mat),
+	x_sample_replace_from,
+	x_sample_replace_to
+)
+y_replace_res <- apply_feature_replace_rules(
+	colnames(y_mat),
+	y_sample_replace_from,
+	y_sample_replace_to
+)
+
+colnames(x_mat) <- make.unique(x_replace_res$values)
+colnames(y_mat) <- make.unique(y_replace_res$values)
 
 x_samples <- colnames(x_mat)
 y_samples <- colnames(y_mat)
@@ -367,6 +436,16 @@ info_lines <- c(
 	sprintf("- mid_color: %s", mid_color),
 	sprintf("- high_color: %s", high_color),
 	sprintf("- plot_title: %s", plot_title),
+	"",
+	"## Sample Name Replace Rules",
+	sprintf("- x_sample_rule_count: %d", x_replace_res$rule_count),
+	sprintf("- x_sample_changed_count: %d", x_replace_res$changed_count),
+	sprintf("- x_sample_replace_from: %s", format_vector_for_info(x_replace_res$from)),
+	sprintf("- x_sample_replace_to: %s", format_vector_for_info(x_replace_res$to)),
+	sprintf("- y_sample_rule_count: %d", y_replace_res$rule_count),
+	sprintf("- y_sample_changed_count: %d", y_replace_res$changed_count),
+	sprintf("- y_sample_replace_from: %s", format_vector_for_info(y_replace_res$from)),
+	sprintf("- y_sample_replace_to: %s", format_vector_for_info(y_replace_res$to)),
 	"",
 	"## Matrix Stats",
 	sprintf("- x_feature_count: %d", nrow(x_mat)),
