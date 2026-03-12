@@ -175,6 +175,53 @@
       "initialValue": true
     },
     {
+      "name": "axis_fontsize_x",
+      "label": "x axis font size",
+      "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 10
+    },
+    {
+      "name": "axis_fontsize_y",
+      "label": "y axis font size",
+      "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 10
+    },
+    {
+      "name": "legend_fontsize",
+      "label": "legend font size",
+      "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 11
+    },
+    {
+      "name": "title_fontsize",
+      "label": "title font size",
+      "col": 12,
+      "type": "BaseInputNumber",
+      "initialValue": 14
+    },
+    {
+      "name": "title_position",
+      "label": "title position",
+      "type": "BaseSelect",
+      "col": 12,
+      "initialValue": "center",
+      "data": [
+        { "label": "Left", "value": "left" },
+        { "label": "Center", "value": "center" },
+        { "label": "Right", "value": "right" }
+      ]
+    },
+    {
+      "name": "x_axis_rotation",
+      "label": "x axis rotation",
+      "type": "BaseInputNumber",
+      "col": 12,
+      "initialValue": 45
+    },
+    {
       "name": "heatmap_width",
       "label": "heatmap width",
         "col": 12,

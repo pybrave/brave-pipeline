@@ -63,6 +63,27 @@ to_bool <- function(x, default = FALSE) {
 	default
 }
 
+to_number <- function(x, default, min_value = NULL, max_value = NULL) {
+	v <- suppressWarnings(as.numeric(x %||% default))
+	if (is.na(v)) v <- default
+	if (!is.null(min_value) && v < min_value) v <- min_value
+	if (!is.null(max_value) && v > max_value) v <- max_value
+	v
+}
+
+normalize_title_position <- function(x, default = "center") {
+	v <- tolower(trimws(as.character(x %||% default)[[1]]))
+	if (!(v %in% c("left", "center", "right"))) return(default)
+	v
+}
+
+normalize_angle_col <- function(x, default = 45) {
+	v <- suppressWarnings(as.numeric(x %||% default))
+	if (is.na(v)) v <- default
+	allowed <- c(0, 45, 90, 270, 315)
+	allowed[[which.min(abs(allowed - v))]]
+}
+
 read_selected_matrix <- function(input_node, input_name) {
 	if (is.null(input_node$content)) {
 		stop(sprintf("%s.content 缺失", input_name))
@@ -228,6 +249,13 @@ cluster_cols <- to_bool(data$cluster_cols, TRUE)
 show_rownames <- to_bool(data$heatmap_show_rownames, TRUE)
 show_colnames <- to_bool(data$heatmap_show_colnames, TRUE)
 
+axis_fontsize_x <- to_number(data$axis_fontsize_x, default = 10, min_value = 1)
+axis_fontsize_y <- to_number(data$axis_fontsize_y, default = 10, min_value = 1)
+legend_fontsize <- to_number(data$legend_fontsize, default = 11, min_value = 1)
+title_fontsize <- to_number(data$title_fontsize, default = 14, min_value = 1)
+title_position <- normalize_title_position(data$title_position, default = "center")
+x_axis_rotation <- normalize_angle_col(data$x_axis_rotation, default = 45)
+
 readr::write_tsv(as.data.frame(corr_matrix) %>% tibble::rownames_to_column("name"),
 								 file.path(output_path, "corr_matrix.tsv"))
 readr::write_tsv(as.data.frame(p_matrix) %>% tibble::rownames_to_column("name"),
@@ -237,7 +265,8 @@ readr::write_tsv(as.data.frame(q_matrix) %>% tibble::rownames_to_column("name"),
 
 plot_pdf <- file.path(output_path, "correlation_heatmap.pdf")
 grDevices::pdf(file = plot_pdf, width = heatmap_width, height = heatmap_height)
-pheatmap::pheatmap(
+
+heatmap_obj <- pheatmap::pheatmap(
 	corr_matrix,
 	display_numbers = if (show_signif_marker) star_matrix else FALSE,
 	color = colorRampPalette(c(low_color, mid_color, high_color))(100),
@@ -246,10 +275,34 @@ pheatmap::pheatmap(
 	show_rownames = show_rownames,
 	show_colnames = show_colnames,
 	fontsize_number = 10,
-	fontsize = 11,
-	main = plot_title,
+	fontsize = legend_fontsize,
+	fontsize_row = axis_fontsize_y,
+	fontsize_col = axis_fontsize_x,
+	angle_col = as.character(x_axis_rotation),
+	main = NA,
+	silent = TRUE,
 	border_color = NA
 )
+
+grid::grid.newpage()
+grid::grid.draw(heatmap_obj$gtable)
+
+if (!is.na(plot_title) && plot_title != "") {
+	title_x <- switch(title_position, left = 0.02, center = 0.5, right = 0.98)
+	title_just <- switch(title_position,
+		left = c("left", "top"),
+		center = c("center", "top"),
+		right = c("right", "top")
+	)
+	grid::grid.text(
+		plot_title,
+		x = grid::unit(title_x, "npc"),
+		y = grid::unit(0.99, "npc"),
+		just = title_just,
+		gp = grid::gpar(fontsize = title_fontsize, fontface = "bold")
+	)
+}
+
 grDevices::dev.off()
 
 message(sprintf("Heatmap saved to: %s", plot_pdf))
