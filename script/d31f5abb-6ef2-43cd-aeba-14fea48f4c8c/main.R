@@ -367,8 +367,19 @@ dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
 
 data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 
-x_mat <- read_selected_matrix(data$x_input, "x_input")|> na.omit()
-y_mat <- read_selected_matrix(data$y_input, "y_input") |> na.omit()
+x_mat_raw <- read_selected_matrix(data$x_input, "x_input")
+y_mat_raw <- read_selected_matrix(data$y_input, "y_input")
+
+x_feature_count_before_na_omit <- nrow(x_mat_raw)
+y_feature_count_before_na_omit <- nrow(y_mat_raw)
+
+x_mat <- stats::na.omit(x_mat_raw)
+y_mat <- stats::na.omit(y_mat_raw)
+
+x_na_omit_removed_count <- x_feature_count_before_na_omit - nrow(x_mat)
+y_na_omit_removed_count <- y_feature_count_before_na_omit - nrow(y_mat)
+x_na_omit_removed_features <- rownames(x_mat_raw)[!(rownames(x_mat_raw) %in% rownames(x_mat))]
+y_na_omit_removed_features <- rownames(y_mat_raw)[!(rownames(y_mat_raw) %in% rownames(y_mat))]
 
 x_sample_replace_from <- pick_param(data$x_sample_replace_from, data$x_feature_replace_from)
 x_sample_replace_to <- pick_param(data$x_sample_replace_to, data$x_feature_replace_to)
@@ -578,6 +589,12 @@ info_lines <- c(
 	sprintf("- y_sample_replace_kv: %s", format_kv_pairs_for_info(y_replace_res$kv_keys, y_replace_res$kv_values)),
 	"",
 	"## Matrix Stats",
+	sprintf("- x_feature_count_before_na_omit: %d", x_feature_count_before_na_omit),
+	sprintf("- x_na_omit_removed_count: %d", x_na_omit_removed_count),
+	sprintf("- x_na_omit_removed_features: %s", format_vector_for_info(x_na_omit_removed_features)),
+	sprintf("- y_feature_count_before_na_omit: %d", y_feature_count_before_na_omit),
+	sprintf("- y_na_omit_removed_count: %d", y_na_omit_removed_count),
+	sprintf("- y_na_omit_removed_features: %s", format_vector_for_info(y_na_omit_removed_features)),
 	sprintf("- x_feature_count: %d", nrow(x_mat)),
 	sprintf("- y_feature_count: %d", nrow(y_mat)),
 	sprintf("- common_sample_count_used: %d", length(common_samples)),
