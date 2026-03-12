@@ -148,6 +148,9 @@ stat_display <- params$stat_display %||% "value"
 stat_position <- params$stat_position %||% "group_top"
 point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
+plot_width <- as.numeric(params$plot_width %||% 12)
+plot_height <- as.numeric(params$plot_height %||% 7)
+x_text_angle <- as.numeric(params$x_text_angle %||% 45)
 axis_text_size <- as.numeric(params$axis_text_size %||% 10)
 axis_title_size <- as.numeric(params$axis_title_size %||% 12)
 legend_text_size <- as.numeric(params$legend_text_size %||% 9)
@@ -173,11 +176,21 @@ if (!(title_position %in% c("left", "center", "right"))) {
 if (!(legend_position %in% c("top", "bottom", "left", "right", "none"))) {
 	legend_position <- "top"
 }
+if (!is.finite(plot_width) || plot_width <= 0) {
+	plot_width <- 12
+}
+if (!is.finite(plot_height) || plot_height <= 0) {
+	plot_height <- 7
+}
+if (!is.finite(x_text_angle)) {
+	x_text_angle <- 45
+}
 title_hjust <- dplyr::case_when(
 	title_position == "left" ~ 0,
 	title_position == "center" ~ 0.5,
 	TRUE ~ 1
 )
+x_text_hjust <- ifelse(abs(x_text_angle) < 1e-8, 0.5, 1)
 
 x_var <- feature_col
 
@@ -413,7 +426,7 @@ add_common_style <- function(plot_in, title_text = "") {
 		) +
 		base_theme +
 		theme(
-			axis.text.x = element_text(size = axis_text_size, angle = 45, hjust = 1, color = "#222222"),
+			axis.text.x = element_text(size = axis_text_size, angle = x_text_angle, hjust = x_text_hjust, color = "#222222"),
 			axis.text.y = element_text(size = axis_text_size, color = "#222222"),
 			axis.title = element_text(size = axis_title_size, color = "#111111"),
 			legend.position = legend_position,
@@ -446,7 +459,7 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 
 		panel_suffix <- sanitize_filename(panel_value)
 		output_path <- str_glue("output/{output_name}_{panel_suffix}.pdf")
-		ggsave(filename = output_path, plot = panel_plot, width = 12, height = 7, dpi = 300)
+		ggsave(filename = output_path, plot = panel_plot, width = plot_width, height = plot_height, dpi = 300)
 		message(sprintf("Plot saved to: %s", output_path))
 	}
 } else {
@@ -458,6 +471,6 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	plot_obj <- add_common_style(plot_obj, plot_title)
 
 	output_path <- str_glue("output/{output_name}.pdf")
-	ggsave(filename = output_path, plot = plot_obj, width = 12, height = 7, dpi = 300)
+	ggsave(filename = output_path, plot = plot_obj, width = plot_width, height = plot_height, dpi = 300)
 	message(sprintf("Plot saved to: %s", output_path))
 }
