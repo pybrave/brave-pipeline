@@ -548,10 +548,14 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		panel_plot <- add_common_style(panel_plot, panel_title)
 
 		panel_suffix <- sanitize_filename(panel_value)
-		output_path <- str_glue("{output_dir}/{output_name}_{panel_suffix}.pdf")
-		ggsave(filename = output_path, plot = panel_plot, width = plot_width, height = plot_height, dpi = 300)
-		plot_outputs <- c(plot_outputs, output_path)
-		message(sprintf("Plot saved to: %s", output_path))
+		output_base <- str_glue("{output_dir}/{output_name}_{panel_suffix}")
+		output_pdf <- str_glue("{output_base}.download.pdf")
+		output_png <- str_glue("{output_base}.png")
+		ggsave(filename = output_pdf, plot = panel_plot, width = plot_width, height = plot_height, dpi = 300)
+		ggsave(filename = output_png, plot = panel_plot, width = plot_width, height = plot_height, dpi = 100)
+		plot_outputs <- c(plot_outputs, output_pdf, output_png)
+		message(sprintf("Plot saved to: %s", output_pdf))
+		message(sprintf("Plot saved to: %s", output_png))
 	}
 } else {
 	if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "free_x" && panel_type!="none") {
@@ -561,10 +565,14 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	plot_obj <- add_stats_layer(plot_obj, long_df, df)
 	plot_obj <- add_common_style(plot_obj, plot_title)
 
-	output_path <- str_glue("{output_dir}/{output_name}.pdf")
-	ggsave(filename = output_path, plot = plot_obj, width = plot_width, height = plot_height, dpi = 300)
-	plot_outputs <- c(plot_outputs, output_path)
-	message(sprintf("Plot saved to: %s", output_path))
+	output_base <- str_glue("{output_dir}/{output_name}")
+	output_pdf <- str_glue("{output_base}.download.pdf")
+	output_png <- str_glue("{output_base}.png")
+	ggsave(filename = output_pdf, plot = plot_obj, width = plot_width, height = plot_height, dpi = 300)
+	ggsave(filename = output_png, plot = plot_obj, width = plot_width, height = plot_height, dpi = 100)
+	plot_outputs <- c(plot_outputs, output_pdf, output_png)
+	message(sprintf("Plot saved to: %s", output_pdf))
+	message(sprintf("Plot saved to: %s", output_png))
 }
 
 stats_df <- df
