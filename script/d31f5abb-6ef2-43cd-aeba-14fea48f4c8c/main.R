@@ -84,6 +84,11 @@ normalize_angle_col <- function(x, default = 45) {
 	allowed[[which.min(abs(allowed - v))]]
 }
 
+format_vector_for_info <- function(x) {
+	if (length(x) == 0) return("none")
+	paste(x, collapse = ", ")
+}
+
 read_selected_matrix <- function(input_node, input_name) {
 	if (is.null(input_node$content)) {
 		stop(sprintf("%s.content 缺失", input_name))
@@ -190,14 +195,18 @@ if (!file.exists(params_path)) {
 	stop(sprintf("参数文件不存在: %s", params_path))
 }
 
-# dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
+dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
 
 data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 
 x_mat <- read_selected_matrix(data$x_input, "x_input")
 y_mat <- read_selected_matrix(data$y_input, "y_input")
 
+x_samples <- colnames(x_mat)
+y_samples <- colnames(y_mat)
 common_samples <- intersect(colnames(x_mat), colnames(y_mat))
+x_only_samples <- setdiff(x_samples, y_samples)
+y_only_samples <- setdiff(y_samples, x_samples)
 if (length(common_samples) < 3) {
 	stop("x_input 与 y_input 的共同样本列少于 3 个，无法进行相关性与显著性检验")
 }
@@ -304,5 +313,76 @@ if (!is.na(plot_title) && plot_title != "") {
 }
 
 grDevices::dev.off()
+
+total_pairs <- nrow(corr_matrix) * ncol(corr_matrix)
+valid_corr_count <- sum(!is.na(corr_matrix))
+valid_p_count <- sum(!is.na(p_matrix))
+valid_q_count <- sum(!is.na(q_matrix))
+
+sig_level_1 <- suppressWarnings(as.numeric(data$sig_level_1 %||% 0.05))
+sig_level_2 <- suppressWarnings(as.numeric(data$sig_level_2 %||% 0.01))
+sig_level_3 <- suppressWarnings(as.numeric(data$sig_level_3 %||% 0.001))
+if (is.na(sig_level_1)) sig_level_1 <- 0.05
+if (is.na(sig_level_2)) sig_level_2 <- 0.01
+if (is.na(sig_level_3)) sig_level_3 <- 0.001
+
+info_lines <- c(
+	"# Correlation Heatmap Output",
+	"",
+	"## Run Info",
+	sprintf("- run_time: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
+	sprintf("- params_path: %s", params_path),
+	sprintf("- output_path: %s", output_path),
+	"",
+	"## Sample Match Info",
+	sprintf("- x_sample_count: %d", length(x_samples)),
+	sprintf("- y_sample_count: %d", length(y_samples)),
+	sprintf("- matched_sample_count: %d", length(common_samples)),
+	sprintf("- x_only_sample_count: %d", length(x_only_samples)),
+	sprintf("- x_only_samples: %s", format_vector_for_info(x_only_samples)),
+	sprintf("- y_only_sample_count: %d", length(y_only_samples)),
+	sprintf("- y_only_samples: %s", format_vector_for_info(y_only_samples)),
+	"",
+	"## Basic Params",
+	sprintf("- corr_method: %s", corr_method),
+	sprintf("- adjust_method: %s", adjust_method),
+	sprintf("- show_signif_marker: %s", show_signif_marker),
+	sprintf("- signif_by: %s", signif_by),
+	sprintf("- sig_level_1: %s", as.character(sig_level_1)),
+	sprintf("- sig_level_2: %s", as.character(sig_level_2)),
+	sprintf("- sig_level_3: %s", as.character(sig_level_3)),
+	sprintf("- cluster_rows: %s", cluster_rows),
+	sprintf("- cluster_cols: %s", cluster_cols),
+	sprintf("- show_rownames: %s", show_rownames),
+	sprintf("- show_colnames: %s", show_colnames),
+	sprintf("- heatmap_width: %s", heatmap_width),
+	sprintf("- heatmap_height: %s", heatmap_height),
+	sprintf("- axis_fontsize_x: %s", axis_fontsize_x),
+	sprintf("- axis_fontsize_y: %s", axis_fontsize_y),
+	sprintf("- legend_fontsize: %s", legend_fontsize),
+	sprintf("- title_fontsize: %s", title_fontsize),
+	sprintf("- title_position: %s", title_position),
+	sprintf("- x_axis_rotation: %s", x_axis_rotation),
+	sprintf("- low_color: %s", low_color),
+	sprintf("- mid_color: %s", mid_color),
+	sprintf("- high_color: %s", high_color),
+	sprintf("- plot_title: %s", plot_title),
+	"",
+	"## Matrix Stats",
+	sprintf("- x_feature_count: %d", nrow(x_mat)),
+	sprintf("- y_feature_count: %d", nrow(y_mat)),
+	sprintf("- common_sample_count_used: %d", length(common_samples)),
+	sprintf("- corr_matrix_dim: %d x %d", nrow(corr_matrix), ncol(corr_matrix)),
+	sprintf("- total_pairs: %d", total_pairs),
+	sprintf("- valid_corr_count: %d", valid_corr_count),
+	sprintf("- valid_p_count: %d", valid_p_count),
+	sprintf("- valid_q_count: %d", valid_q_count),
+	sprintf("- significant_count_%s_lt_%s: %d", signif_by, sig_level_1, sum(!is.na(sig_source) & sig_source < sig_level_1)),
+	sprintf("- significant_count_%s_lt_%s: %d", signif_by, sig_level_2, sum(!is.na(sig_source) & sig_source < sig_level_2)),
+	sprintf("- significant_count_%s_lt_%s: %d", signif_by, sig_level_3, sum(!is.na(sig_source) & sig_source < sig_level_3)),
+	sprintf("- plot_pdf: %s", plot_pdf)
+)
+
+readr::write_lines(info_lines, file.path(output_path, "output.md"))
 
 message(sprintf("Heatmap saved to: %s", plot_pdf))
