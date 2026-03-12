@@ -254,18 +254,36 @@ read_selected_matrix <- function(input_node, input_name) {
 		stop(sprintf("%s 文件列数不足，至少需要 2 列", input_name))
 	}
 
-	selected_cols <- extract_column_names(input_node$feature_vars)
+	selected_cols <- extract_column_names(input_node$sample_vars)
+	# if (length(selected_cols) == 0) {
+	# 	# Backward compatibility: older params use feature_vars as sample columns.
+	# 	selected_cols <- extract_column_names(input_node$feature_vars)
+	# }
 	if (length(selected_cols) == 0) {
-		stop(sprintf("%s 未选择任何 feature_vars 列", input_name))
+		stop(sprintf("%s 未选择任何 sample_vars 列", input_name))
 	}
 
 	selected_cols <- unique(selected_cols)
 	missing_cols <- setdiff(selected_cols, colnames(df))
 	if (length(missing_cols) > 0) {
-		stop(sprintf("%s 选择列在文件中不存在: %s", input_name, paste(missing_cols, collapse = ", ")))
+		stop(sprintf("%s 选择的 sample_vars 在文件中不存在: %s", input_name, paste(missing_cols, collapse = ", ")))
 	}
 
-	feature_col <- colnames(df)[1]
+	feature_candidates <- extract_column_names(input_node$feature_var)
+	if (length(feature_candidates) > 0) {
+		feature_col <- feature_candidates[[1]]
+		if (!(feature_col %in% colnames(df))) {
+			stop(sprintf("%s 选择的 feature_var 在文件中不存在: %s", input_name, feature_col))
+		}
+	} else {
+		# feature_col <- colnames(df)[1]
+		stop(sprintf("%s 未选择 feature_var 列", input_name))
+	}
+
+	if (feature_col %in% selected_cols) {
+		stop(sprintf("%s 中 feature_var(%s) 不能与 sample_vars 重复", input_name, feature_col))
+	}
+
 	matrix_df <- df %>%
 		dplyr::select(dplyr::all_of(c(feature_col, selected_cols))) %>%
 		dplyr::mutate(dplyr::across(dplyr::all_of(selected_cols), as.numeric)) %>%
@@ -349,8 +367,8 @@ dir.create(output_path, showWarnings = FALSE, recursive = TRUE)
 
 data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 
-x_mat <- read_selected_matrix(data$x_input, "x_input")
-y_mat <- read_selected_matrix(data$y_input, "y_input")
+x_mat <- read_selected_matrix(data$x_input, "x_input")|> na.omit()
+y_mat <- read_selected_matrix(data$y_input, "y_input") |> na.omit()
 
 x_sample_replace_from <- pick_param(data$x_sample_replace_from, data$x_feature_replace_from)
 x_sample_replace_to <- pick_param(data$x_sample_replace_to, data$x_feature_replace_to)
