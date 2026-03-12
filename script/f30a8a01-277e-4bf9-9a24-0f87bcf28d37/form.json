@@ -49,6 +49,50 @@
         {
           "label": "t-test",
           "value": "t-test"
+        },
+        {
+          "label": "wilcox",
+          "value": "wilcox"
+        }
+      ]
+    },
+    {
+      "name": "qvalue_method",
+      "label": "Qvalue adjust method",
+      "type": "BaseSelect",
+      "initialValue": "BH",
+      "depends": {
+        "or": [
+          {
+            "name": "sig_mode",
+            "value": "t-test"
+          },
+          {
+            "name": "sig_mode",
+            "value": "wilcox"
+          }
+        ]
+      },
+      "data": [
+        {
+          "label": "none",
+          "value": "none"
+        },
+        {
+          "label": "BH",
+          "value": "BH"
+        },
+        {
+          "label": "bonferroni",
+          "value": "bonferroni"
+        },
+        {
+          "label": "holm",
+          "value": "holm"
+        },
+        {
+          "label": "BY",
+          "value": "BY"
         }
       ]
     },

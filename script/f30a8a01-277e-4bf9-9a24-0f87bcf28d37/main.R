@@ -74,6 +74,59 @@ safe_max <- function(x, fallback = 0) {
 	if (!is.finite(mx)) fallback else mx
 }
 
+compute_group_pvalue <- function(x, y, method = "t-test") {
+	x <- suppressWarnings(as.numeric(x))
+	y <- suppressWarnings(as.numeric(y))
+	x <- x[is.finite(x)]
+	y <- y[is.finite(y)]
+
+	if (length(x) == 0 || length(y) == 0) {
+		return(NA_real_)
+	}
+
+	tryCatch({
+		if (method == "wilcox") {
+			stats::wilcox.test(x, y, exact = FALSE)$p.value
+		} else {
+			stats::t.test(x, y)$p.value
+		}
+	}, error = function(e) {
+		NA_real_
+	})
+}
+
+add_computed_stats <- function(data_frame, feature_column, group1_samples, group2_samples, sig_mode, qvalue_method) {
+	if (!(sig_mode %in% c("t-test", "wilcox"))) {
+		return(data_frame)
+	}
+
+	available_group1 <- intersect(group1_samples, colnames(data_frame))
+	available_group2 <- intersect(group2_samples, colnames(data_frame))
+	if (length(available_group1) == 0 || length(available_group2) == 0) {
+		stop("所选组在输入表中缺少有效样本列，无法计算统计量")
+	}
+
+	p_values <- vapply(seq_len(nrow(data_frame)), function(i) {
+		x <- unlist(data_frame[i, available_group1, drop = TRUE], use.names = FALSE)
+		y <- unlist(data_frame[i, available_group2, drop = TRUE], use.names = FALSE)
+		compute_group_pvalue(x, y, method = sig_mode)
+	}, numeric(1))
+
+	valid_idx <- which(!is.na(p_values))
+	q_values <- rep(NA_real_, length(p_values))
+	if (length(valid_idx) > 0) {
+		if (tolower(qvalue_method) == "none") {
+			q_values[valid_idx] <- p_values[valid_idx]
+		} else {
+			q_values[valid_idx] <- stats::p.adjust(p_values[valid_idx], method = qvalue_method)
+		}
+	}
+
+	data_frame$P_value <- p_values
+	data_frame$Qvalue <- q_values
+	data_frame
+}
+
 significance_to_star <- function(x) {
 	dplyr::case_when(
 		is.na(x) ~ "ns",
@@ -142,6 +195,8 @@ long_df <- df %>%
 
 plot_type <- params$plot_type %||% "violin"
 panel_type <- params$panel_type %||% "free_x"
+sig_mode <- params$sig_mode %||% "exist"
+qvalue_method <- as.character(params$qvalue_method %||% "BH")
 show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
 stat_display <- params$stat_display %||% "value"
@@ -185,6 +240,31 @@ if (!is.finite(plot_height) || plot_height <= 0) {
 if (!is.finite(x_text_angle)) {
 	x_text_angle <- 45
 }
+if (!(sig_mode %in% c("exist", "t-test", "wilcox"))) {
+	sig_mode <- "exist"
+}
+if (!(qvalue_method %in% p.adjust.methods)) {
+	qvalue_method <- "BH"
+}
+
+if (sig_mode != "exist") {
+	if (length(group1_cols) == 0 || length(group2_cols) == 0) {
+		stop("sig_mode 非 exist 时，group1_vars 与 group2_vars 需要至少各选择一列")
+	}
+
+	if (!is.null(panel_col) && panel_col %in% colnames(df)) {
+		df <- df %>%
+			dplyr::group_by(.data[[panel_col]]) %>%
+			dplyr::group_modify(~ add_computed_stats(.x, feature_col, group1_cols, group2_cols, sig_mode, qvalue_method)) %>%
+			dplyr::ungroup()
+	} else {
+		df <- add_computed_stats(df, feature_col, group1_cols, group2_cols, sig_mode, qvalue_method)
+	}
+
+	p_col_selected <- "P_value"
+	q_col_selected <- "Qvalue"
+}
+
 title_hjust <- dplyr::case_when(
 	title_position == "left" ~ 0,
 	title_position == "center" ~ 0.5,
