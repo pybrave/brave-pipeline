@@ -187,3 +187,7 @@ message(sprintf("Output saved to: %s", output_file))
 
 ---
 如果新任务是任意新图型或非图统计任务，优先复用本规范，不另起风格。
+
+
+## 其它操作
++ 如果from表单输入两个文件，需要让样本名称相同，操作指令请参考 "columns_matching.md"部分的示例。
