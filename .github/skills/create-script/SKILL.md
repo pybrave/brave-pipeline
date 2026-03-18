@@ -1,3 +1,10 @@
+---
+name: create-script
+description: 生成R脚本的技能，遵循仓库的代码规范和输出要求。
+---
+
+<!-- Tip: Use /create-skill in chat to generate content with agent assistance -->
+
 # LLM Skill: R Pipeline Script Coding Standard (Generic, Cross-Visualization)
 
 ## Scope
