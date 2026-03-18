@@ -8,14 +8,17 @@
       "group": "group_field",
       "type": "CollectedSampleSelect",
       "columns": [
-        "sample_vars",
+        "control_sample_vars",
+        "treatment_sample_vars",
         "feature_var"
       ],
       "modes": [
         1,
+        1,
         0
       ],
       "columns_rules": [
+        1,
         1,
         1
       ],
@@ -33,16 +36,19 @@
       "group": "group_field",
       "type": "CollectedSampleSelect",
       "columns": [
-        "sample_vars",
+        "control_sample_vars",
+        "treatment_sample_vars",
         "feature_var"
       ],
       "modes": [
+        1,
         1,
         0
       ],
       "columns_rules": [
         1,
-        0
+        1,
+        1
       ],
       "rules": [
         {

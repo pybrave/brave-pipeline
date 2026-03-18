@@ -199,15 +199,23 @@ read_selected_matrix <- function(input_node, input_name) {
 		stop(sprintf("%s 文件列数不足，至少需要 2 列: %s", input_name, file_path))
 	}
 
-	selected_cols <- extract_column_names(input_node$sample_vars)
+	legacy_sample_cols <- extract_column_names(input_node$sample_vars)
+	control_cols <- extract_column_names(input_node$control_sample_vars)
+	treatment_cols <- extract_column_names(input_node$treatment_sample_vars)
+	selected_cols <- unique(c(legacy_sample_cols, control_cols, treatment_cols))
 	if (length(selected_cols) == 0) {
-		stop(sprintf("%s 未选择任何 sample_vars 列", input_name))
+		stop(sprintf("%s 未选择任何样本列（sample_vars/control_sample_vars/treatment_sample_vars）", input_name))
+	}
+
+	overlap_group_cols <- intersect(control_cols, treatment_cols)
+	if (length(overlap_group_cols) > 0) {
+		stop(sprintf("%s 中 control_sample_vars 与 treatment_sample_vars 存在重复列: %s", input_name, paste(overlap_group_cols, collapse = ", ")))
 	}
 
 	selected_cols <- unique(selected_cols)
 	missing_cols <- setdiff(selected_cols, colnames(df))
 	if (length(missing_cols) > 0) {
-		stop(sprintf("%s 选择的 sample_vars 在文件中不存在: %s", input_name, paste(missing_cols, collapse = ", ")))
+		stop(sprintf("%s 选择的样本列在文件中不存在: %s", input_name, paste(missing_cols, collapse = ", ")))
 	}
 
 	feature_candidates <- extract_column_names(input_node$feature_var)
@@ -226,7 +234,6 @@ read_selected_matrix <- function(input_node, input_name) {
 
 	matrix_df <- df %>%
 		dplyr::select(dplyr::all_of(c(feature_col, selected_cols))) %>%
-		dplyr::mutate(dplyr::across(dplyr::all_of(selected_cols), as.numeric)) %>%
 		dplyr::filter(!is.na(.data[[feature_col]]) & .data[[feature_col]] != "") %>%
 		dplyr::distinct(.data[[feature_col]], .keep_all = TRUE)
 
@@ -234,8 +241,253 @@ read_selected_matrix <- function(input_node, input_name) {
 		tibble::column_to_rownames(feature_col) %>%
 		as.matrix()
 
-	storage.mode(mat) <- "numeric"
-	mat
+	list(
+		mat = mat,
+		selected_cols = selected_cols,
+		control_cols = unique(control_cols),
+		treatment_cols = unique(treatment_cols),
+		legacy_sample_cols = unique(legacy_sample_cols),
+		feature_col = feature_col,
+		file_path = file_path
+	)
+}
+
+remap_selected_names <- function(original_all, replaced_all, selected_cols) {
+	if (length(selected_cols) == 0) return(character())
+	name_map <- stats::setNames(replaced_all, original_all)
+	mapped <- unname(name_map[selected_cols])
+	mapped <- as.character(mapped)
+	mapped <- mapped[!is.na(mapped) & mapped != ""]
+	unique(mapped)
+}
+
+as_numeric_matrix <- function(mat, input_name) {
+	numeric_mat <- suppressWarnings(as.numeric(mat))
+	numeric_mat <- matrix(
+		numeric_mat,
+		nrow = nrow(mat),
+		ncol = ncol(mat),
+		dimnames = dimnames(mat)
+	)
+
+	na_count <- sum(is.na(numeric_mat))
+	if (na_count == nrow(numeric_mat) * ncol(numeric_mat)) {
+		stop(sprintf("%s 转换为数值矩阵失败，全部为 NA", input_name))
+	}
+
+	numeric_mat
+}
+
+fit_one_mediation <- function(x_vec, m_vec, y_vec) {
+	df <- tibble::tibble(
+		X = as.numeric(x_vec),
+		M = as.numeric(m_vec),
+		Y = as.numeric(y_vec)
+	) %>%
+		dplyr::filter(stats::complete.cases(.))
+
+	if (nrow(df) < 8) return(NULL)
+	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
+
+	model_a <- stats::lm(M ~ X, data = df)
+	model_b <- stats::lm(Y ~ X + M, data = df)
+	model_t <- stats::lm(Y ~ X, data = df)
+
+	sum_a <- summary(model_a)$coefficients
+	sum_b <- summary(model_b)$coefficients
+	sum_t <- summary(model_t)$coefficients
+
+	if (!("X" %in% rownames(sum_a)) || !("M" %in% rownames(sum_b)) || !("X" %in% rownames(sum_b))) {
+		return(NULL)
+	}
+
+	a <- as.numeric(sum_a["X", "Estimate"])
+	sa <- as.numeric(sum_a["X", "Std. Error"])
+	b <- as.numeric(sum_b["M", "Estimate"])
+	sb <- as.numeric(sum_b["M", "Std. Error"])
+	c_prime <- as.numeric(sum_b["X", "Estimate"])
+	c_total <- as.numeric(sum_t["X", "Estimate"])
+
+	indirect <- a * b
+	sobel_se <- sqrt((b^2) * (sa^2) + (a^2) * (sb^2))
+	sobel_z <- ifelse(sobel_se > 0, indirect / sobel_se, NA_real_)
+	p_indirect <- ifelse(is.na(sobel_z), NA_real_, 2 * stats::pnorm(abs(sobel_z), lower.tail = FALSE))
+
+	tibble::tibble(
+		n = nrow(df),
+		a_effect = a,
+		a_p = as.numeric(sum_a["X", "Pr(>|t|)"]),
+		b_effect = b,
+		b_p = as.numeric(sum_b["M", "Pr(>|t|)"]),
+		direct_effect = c_prime,
+		direct_p = as.numeric(sum_b["X", "Pr(>|t|)"]),
+		total_effect = c_total,
+		total_p = as.numeric(sum_t["X", "Pr(>|t|)"]),
+		indirect_effect = indirect,
+		indirect_z = sobel_z,
+		indirect_p = p_indirect,
+		prop_mediated = ifelse(c_total == 0, NA_real_, indirect / c_total)
+	)
+}
+
+plot_mediation_sankey <- function(res_df, output_file, top_n = 30) {
+	plot_df <- res_df %>%
+		dplyr::arrange(indirect_q, indirect_p) %>%
+		dplyr::slice_head(n = min(top_n, nrow(.)))
+
+	if (nrow(plot_df) == 0) {
+		return(FALSE)
+	}
+
+	link_xm <- plot_df %>%
+		dplyr::transmute(source = x_feature, target = y_feature, level_source = 1L, level_target = 2L, weight = abs(indirect_effect), sign = sign(indirect_effect), edge = "X->M")
+	link_my <- plot_df %>%
+		dplyr::transmute(source = y_feature, target = group_feature, level_source = 2L, level_target = 3L, weight = abs(indirect_effect), sign = sign(indirect_effect), edge = "M->Y")
+
+	edges <- dplyr::bind_rows(link_xm, link_my) %>%
+		dplyr::group_by(source, target, level_source, level_target, edge, sign) %>%
+		dplyr::summarise(weight = sum(weight, na.rm = TRUE), .groups = "drop")
+
+	nodes <- dplyr::bind_rows(
+		tibble::tibble(name = unique(plot_df$x_feature), level = 1L),
+		tibble::tibble(name = unique(plot_df$y_feature), level = 2L),
+		tibble::tibble(name = unique(plot_df$group_feature), level = 3L)
+	) %>%
+		dplyr::distinct() %>%
+		dplyr::group_by(level) %>%
+		dplyr::arrange(name, .by_group = TRUE) %>%
+		dplyr::mutate(y = dplyr::row_number()) %>%
+		dplyr::ungroup() %>%
+		dplyr::mutate(x = level)
+
+	edges_plot <- edges %>%
+		dplyr::left_join(nodes %>% dplyr::select(source = name, x = x, y = y), by = "source") %>%
+		dplyr::rename(x = x, y = y) %>%
+		dplyr::left_join(nodes %>% dplyr::select(target = name, xend = x, yend = y), by = "target")
+
+	p <- ggplot2::ggplot() +
+		ggplot2::geom_curve(
+			data = edges_plot,
+			ggplot2::aes(x = x, y = y, xend = xend, yend = yend, size = weight, color = factor(sign)),
+			curvature = 0.25,
+			alpha = 0.65,
+			lineend = "round"
+		) +
+		ggplot2::geom_point(
+			data = nodes,
+			ggplot2::aes(x = x, y = y),
+			size = 3,
+			shape = 21,
+			fill = "white",
+			stroke = 0.8
+		) +
+		ggplot2::geom_text(
+			data = nodes,
+			ggplot2::aes(x = x, y = y, label = name),
+			nudge_x = 0.08,
+			hjust = 0,
+			size = 3
+		) +
+		ggplot2::scale_x_continuous(
+			breaks = c(1, 2, 3),
+			labels = c("Metabolite (X)", "Microbe (M)", "Phenotype (Y)"),
+			limits = c(0.8, 3.8)
+		) +
+		ggplot2::scale_color_manual(values = c("-1" = "#2C7BB6", "0" = "#7F7F7F", "1" = "#D7191C"), guide = "none") +
+		ggplot2::scale_size_continuous(range = c(0.4, 2.6)) +
+		ggplot2::labs(
+			title = "Mediation Sankey-like Path Map",
+			subtitle = sprintf("Top %d mediation paths by indirect q-value", nrow(plot_df)),
+			x = NULL,
+			y = NULL,
+			size = "|indirect effect|"
+		) +
+		ggplot2::theme_minimal(base_size = 11) +
+		ggplot2::theme(
+			panel.grid = ggplot2::element_blank(),
+			axis.text.y = ggplot2::element_blank(),
+			axis.ticks = ggplot2::element_blank(),
+			plot.title = ggplot2::element_text(face = "bold")
+		)
+
+	ggplot2::ggsave(filename = output_file, plot = p, width = 12, height = 8)
+	TRUE
+}
+
+plot_triangle_path <- function(one_row, output_file) {
+	nodes <- tibble::tibble(
+		node = c("X", "M", "Y"),
+		label = c(
+			sprintf("Metabolite\\n%s", one_row$x_feature),
+			sprintf("Microbe\\n%s", one_row$y_feature),
+			sprintf("Phenotype\\n%s", one_row$group_feature)
+		),
+		x = c(-1, 0, 1),
+		y = c(0, 1.2, 0)
+	)
+
+	edges <- tibble::tibble(
+		x = c(-1, 0, -1),
+		y = c(0, 1.2, 0),
+		xend = c(0, 1, 1),
+		yend = c(1.2, 0, 0),
+		label = c(
+			sprintf("a = %.3g\\np = %.3g", one_row$a_effect, one_row$a_p),
+			sprintf("b = %.3g\\np = %.3g", one_row$b_effect, one_row$b_p),
+			sprintf("c' = %.3g\\np = %.3g", one_row$direct_effect, one_row$direct_p)
+		),
+		lx = c(-0.55, 0.55, 0),
+		ly = c(0.72, 0.72, -0.16)
+	)
+
+	p <- ggplot2::ggplot() +
+		ggplot2::geom_curve(
+			data = edges,
+			ggplot2::aes(x = x, y = y, xend = xend, yend = yend),
+			curvature = 0.08,
+			arrow = ggplot2::arrow(length = grid::unit(0.18, "cm")),
+			linewidth = 0.8,
+			color = "#3A3A3A"
+		) +
+		ggplot2::geom_label(
+			data = nodes,
+			ggplot2::aes(x = x, y = y, label = label),
+			size = 3.3,
+			label.size = 0.25,
+			fill = "#F7F7F7"
+		) +
+		ggplot2::geom_label(
+			data = edges,
+			ggplot2::aes(x = lx, y = ly, label = label),
+			size = 3,
+			label.size = 0.2,
+			fill = "white"
+		) +
+		ggplot2::annotate(
+			"label",
+			x = 0,
+			y = -0.55,
+			label = sprintf(
+				"indirect = %.3g (p = %.3g, q = %.3g)\\ndirect = %.3g\\ntotal = %.3g\\nprop_mediated = %.3g",
+				one_row$indirect_effect,
+				one_row$indirect_p,
+				one_row$indirect_q,
+				one_row$direct_effect,
+				one_row$total_effect,
+				one_row$prop_mediated
+			),
+			size = 3,
+			label.size = 0.25,
+			fill = "#FFFBEA"
+		) +
+		ggplot2::coord_cartesian(xlim = c(-1.5, 1.5), ylim = c(-0.9, 1.6), clip = "off") +
+		ggplot2::labs(title = "Top Mediation Triangle Path", x = NULL, y = NULL) +
+		ggplot2::theme_void(base_size = 11) +
+		ggplot2::theme(
+			plot.title = ggplot2::element_text(face = "bold", hjust = 0.5)
+		)
+
+	ggplot2::ggsave(filename = output_file, plot = p, width = 8, height = 6)
 }
 
 params_path <- "params.json"
@@ -249,8 +501,10 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 
 data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 
-x_mat <- read_selected_matrix(data$x_input, "x_input")
-y_mat <- read_selected_matrix(data$y_input, "y_input")
+x_parsed <- read_selected_matrix(data$x_input, "x_input")
+y_parsed <- read_selected_matrix(data$y_input, "y_input")
+x_mat <- as_numeric_matrix(x_parsed$mat, "x_input")
+y_mat <- as_numeric_matrix(y_parsed$mat, "y_input")
 
 x_sample_replace_from <- pick_param(data$x_sample_replace_from, data$x_feature_replace_from)
 x_sample_replace_to <- pick_param(data$x_sample_replace_to, data$x_feature_replace_to)
@@ -288,6 +542,18 @@ if (anyDuplicated(y_replace_res$values) > 0) {
 colnames(x_mat) <- x_replace_res$values
 colnames(y_mat) <- y_replace_res$values
 
+x_control_samples <- remap_selected_names(colnames(x_parsed$mat), colnames(x_mat), x_parsed$control_cols)
+x_treatment_samples <- remap_selected_names(colnames(x_parsed$mat), colnames(x_mat), x_parsed$treatment_cols)
+y_control_samples <- remap_selected_names(colnames(y_parsed$mat), colnames(y_mat), y_parsed$control_cols)
+y_treatment_samples <- remap_selected_names(colnames(y_parsed$mat), colnames(y_mat), y_parsed$treatment_cols)
+
+x_group_map <- stats::setNames(rep(NA_character_, ncol(x_mat)), colnames(x_mat))
+y_group_map <- stats::setNames(rep(NA_character_, ncol(y_mat)), colnames(y_mat))
+x_group_map[x_control_samples] <- "control"
+x_group_map[x_treatment_samples] <- "treatment"
+y_group_map[y_control_samples] <- "control"
+y_group_map[y_treatment_samples] <- "treatment"
+
 x_samples <- colnames(x_mat)
 y_samples <- colnames(y_mat)
 common_samples <- intersect(x_samples, y_samples)
@@ -298,17 +564,120 @@ if (length(common_samples) == 0) {
 	stop(sprintf("x_input 与 y_input 没有共同样本名，无法对齐。x_sample_count=%d, y_sample_count=%d", length(x_samples), length(y_samples)))
 }
 
+group_from_x <- x_group_map[common_samples]
+group_from_y <- y_group_map[common_samples]
+
+conflict_mask <- !is.na(group_from_x) & !is.na(group_from_y) & group_from_x != group_from_y
+if (any(conflict_mask)) {
+	conflict_samples <- common_samples[conflict_mask]
+	stop(sprintf("分组冲突：同一样本在 x_input 与 y_input 的 control/treatment 定义不一致。冲突样本: %s", paste(head(conflict_samples, 20), collapse = ", ")))
+}
+
+group_label <- ifelse(!is.na(group_from_x), group_from_x, group_from_y)
+group_assigned_mask <- !is.na(group_label)
+if (sum(group_assigned_mask) == 0) {
+	stop(sprintf("无法从 control_sample_vars/treatment_sample_vars 推断分组，请至少在 x_input 或 y_input 中选择分组样本列"))
+}
+
+group_unassigned_samples <- common_samples[!group_assigned_mask]
+if (length(group_unassigned_samples) > 0) {
+	message(sprintf("有 %d 个共同样本未被分组定义，已从中介分析中移除", length(group_unassigned_samples)))
+}
+
+common_samples <- common_samples[group_assigned_mask]
+group_label <- group_label[group_assigned_mask]
+group_vec <- ifelse(group_label == "control", 0, 1)
+names(group_vec) <- common_samples
+
+if (length(common_samples) == 0) {
+	stop(sprintf("用于分析的共同样本为空（可能均未分组）"))
+}
+
 x_aligned <- x_mat[, common_samples, drop = FALSE]
 y_aligned <- y_mat[, common_samples, drop = FALSE]
+group_aligned <- group_vec[common_samples]
+
+group_levels <- sort(unique(group_aligned))
+if (!identical(group_levels, c(0, 1))) {
+	stop(sprintf("分组编码异常，期望包含 control=0 和 treatment=1，实际为: %s", paste(group_levels, collapse = ", ")))
+}
+
+valid_group_mask <- !is.na(group_aligned)
+if (sum(valid_group_mask) < 8) {
+	stop(sprintf("group 在共同样本中有效值太少，至少需要 8 个，当前有效数: %d", sum(valid_group_mask)))
+}
+
+if (sum(valid_group_mask) < length(group_aligned)) {
+	message(sprintf("group 存在 NA，已移除 %d 个样本", sum(!valid_group_mask)))
+}
+
+common_samples <- common_samples[valid_group_mask]
+x_aligned <- x_aligned[, common_samples, drop = FALSE]
+y_aligned <- y_aligned[, common_samples, drop = FALSE]
+group_aligned <- group_aligned[valid_group_mask]
 
 x_output <- file.path(output_dir, "x_aligned.tsv")
 y_output <- file.path(output_dir, "y_aligned.tsv")
+group_output <- file.path(output_dir, "group_aligned.tsv")
+mediation_output <- file.path(output_dir, "mediation_all.tsv")
+top_output <- file.path(output_dir, "mediation_top.tsv")
+sankey_output <- file.path(output_dir, "mediation_sankey.pdf")
+triangle_output <- file.path(output_dir, "mediation_triangle.pdf")
 
 readr::write_tsv(as.data.frame(x_aligned) %>% tibble::rownames_to_column("feature"), x_output)
 readr::write_tsv(as.data.frame(y_aligned) %>% tibble::rownames_to_column("feature"), y_output)
+readr::write_tsv(
+	tibble::tibble(sample = names(group_aligned), group = as.integer(group_aligned), group_label = ifelse(group_aligned == 0, "control", "treatment")),
+	group_output
+)
+
+result_list <- vector("list", length = nrow(x_aligned) * nrow(y_aligned))
+idx <- 1L
+for (i in seq_len(nrow(x_aligned))) {
+	x_name <- rownames(x_aligned)[[i]]
+	x_vec <- as.numeric(x_aligned[i, ])
+
+	for (j in seq_len(nrow(y_aligned))) {
+		y_name <- rownames(y_aligned)[[j]]
+		y_vec <- as.numeric(y_aligned[j, ])
+
+		fit <- fit_one_mediation(x_vec, y_vec, group_aligned)
+		if (!is.null(fit)) {
+			result_list[[idx]] <- fit %>%
+				dplyr::mutate(
+					x_feature = x_name,
+					y_feature = y_name,
+					group_feature = "control_vs_treatment"
+				)
+			idx <- idx + 1L
+		}
+	}
+}
+
+result_list <- result_list[seq_len(max(0, idx - 1L))]
+if (length(result_list) == 0) {
+	stop(sprintf("没有可用的中介模型结果（可能是缺失值过多或变量方差为 0）"))
+}
+
+mediation_df <- dplyr::bind_rows(result_list) %>%
+	mutate(
+		indirect_q = p.adjust(indirect_p, method = "BH"),
+		direct_q = p.adjust(direct_p, method = "BH"),
+		total_q = p.adjust(total_p, method = "BH")
+	) %>%
+	dplyr::arrange(indirect_q, indirect_p)
+
+readr::write_tsv(mediation_df, mediation_output)
+
+top_df <- mediation_df %>%
+	dplyr::slice_head(n = min(30, nrow(mediation_df)))
+readr::write_tsv(top_df, top_output)
+
+sankey_ok <- plot_mediation_sankey(top_df, sankey_output, top_n = 30)
+plot_triangle_path(top_df[1, ], triangle_output)
 
 info_lines <- c(
-	"# Sample Name Matching Output",
+	"# Causal Mediation Analysis Output",
 	"",
 	"## Run Info",
 	sprintf("- run_time: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
@@ -324,6 +693,27 @@ info_lines <- c(
 	sprintf("- x_only_samples: %s", format_vector_for_info(x_only_samples)),
 	sprintf("- y_only_sample_count: %d", length(y_only_samples)),
 	sprintf("- y_only_samples: %s", format_vector_for_info(y_only_samples)),
+	sprintf("- unassigned_group_sample_count: %d", length(group_unassigned_samples)),
+	sprintf("- unassigned_group_samples: %s", format_vector_for_info(group_unassigned_samples)),
+	"",
+	"## Group Info",
+	sprintf("- group_source: %s", "control_sample_vars + treatment_sample_vars"),
+	sprintf("- x_control_sample_count: %d", length(x_control_samples)),
+	sprintf("- x_treatment_sample_count: %d", length(x_treatment_samples)),
+	sprintf("- y_control_sample_count: %d", length(y_control_samples)),
+	sprintf("- y_treatment_sample_count: %d", length(y_treatment_samples)),
+	sprintf("- group_mapping: %s", "control=0; treatment=1"),
+	"",
+	"## Mediation Stats",
+	sprintf("- x_feature_count: %d", nrow(x_aligned)),
+	sprintf("- y_feature_count: %d", nrow(y_aligned)),
+	sprintf("- tested_pair_count: %d", nrow(mediation_df)),
+	sprintf("- significant_indirect_q_lt_0.05: %d", sum(mediation_df$indirect_q < 0.05, na.rm = TRUE)),
+	sprintf("- top_pair_x: %s", top_df$x_feature[[1]]),
+	sprintf("- top_pair_y: %s", top_df$y_feature[[1]]),
+	sprintf("- top_pair_indirect: %.4g", top_df$indirect_effect[[1]]),
+	sprintf("- top_pair_indirect_p: %.4g", top_df$indirect_p[[1]]),
+	sprintf("- top_pair_indirect_q: %.4g", top_df$indirect_q[[1]]),
 	"",
 	"## Sample Name Replace Rules",
 	sprintf("- x_sample_replace_mode: %s", x_replace_res$mode),
@@ -341,8 +731,13 @@ info_lines <- c(
 	"",
 	"## Output Files",
 	sprintf("- x_aligned_file: %s", x_output),
-	sprintf("- y_aligned_file: %s", y_output)
+	sprintf("- y_aligned_file: %s", y_output),
+	sprintf("- group_aligned_file: %s", group_output),
+	sprintf("- mediation_all_file: %s", mediation_output),
+	sprintf("- mediation_top_file: %s", top_output),
+	sprintf("- mediation_sankey_file: %s", ifelse(sankey_ok, sankey_output, "none")),
+	sprintf("- mediation_triangle_file: %s", triangle_output)
 )
 
 readr::write_lines(info_lines, file.path(output_dir, "output.md"))
-message(sprintf("Sample matching output saved: %s", output_dir))
+message(sprintf("Causal mediation outputs saved: %s", output_dir))
