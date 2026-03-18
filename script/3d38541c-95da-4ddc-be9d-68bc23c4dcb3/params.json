@@ -1,0 +1,69 @@
+{
+  "group_field": "group",
+  "logistic": {
+    "id": 6992,
+    "analysis_result_id": "771089f7-0e24-4d49-ac04-ad823cf60778",
+    "sample_id": null,
+    "file_name": "20260227MLR删除NLR15人-SIINLRNEU下降的MDD自杀睡眠数据整理_v13.xlsx",
+    "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+    "file_type": "collected",
+    "content": "/opt/brave_prod/workspace/data/959dd087-c948-408b-8557-22fb4a5a81ef/20260227MLR删除NLR15人-SIINLRNEU下降的MDD自杀睡眠数据整理_v13.tsv",
+    "file": 6992,
+    "sample": {
+      "id": 6992,
+      "sample_name": "Code",
+      "analysis_result_id": "771089f7-0e24-4d49-ac04-ad823cf60778",
+      "columns_name": "Code"
+    },
+    "independent_variable": [
+      {
+        "id": 6992,
+        "sample_name": "Age",
+        "analysis_result_id": "771089f7-0e24-4d49-ac04-ad823cf60778",
+        "columns_name": "Age"
+      },
+      {
+        "id": 6992,
+        "sample_name": "Sex",
+        "analysis_result_id": "771089f7-0e24-4d49-ac04-ad823cf60778",
+        "columns_name": "Sex"
+      }
+    ],
+    "outcome": {
+      "id": 6992,
+      "sample_name": "suicide",
+      "analysis_result_id": "771089f7-0e24-4d49-ac04-ad823cf60778",
+      "columns_name": "suicide"
+    },
+    "columns_attribute": [
+      {
+        "column": "Sex",
+        "value": "1"
+      }
+    ],
+    "form_type": "CollectedSampleSelect",
+    "groups": [
+      "sample",
+      "independent_variable",
+      "outcome",
+      "interaction_1",
+      "interaction_2"
+    ]
+  },
+  "risk_factor_value": "1",
+  "family": "binomial",
+  "numeric_missing": "median",
+  "colors": {
+    "logistic": "-"
+  },
+  "groups_name": {
+    "logistic": "-"
+  },
+  "re_groups_name": {
+    "logistic": "-"
+  },
+  "groups": [
+    "logistic"
+  ],
+  "pipeline_dir": "/opt/brave_prod/workspace/pipeline"
+}
