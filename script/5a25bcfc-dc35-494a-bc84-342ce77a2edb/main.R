@@ -134,6 +134,18 @@ pick_param <- function(primary, fallback = NULL) {
 	fallback
 }
 
+normalize_mediation_method <- function(x) {
+	v <- tolower(trimws(as.character(x %||% "")[[1]]))
+	if (v %in% c("current", "mediation_pkg")) return(v)
+	"current"
+}
+
+parse_positive_integer <- function(x, default_value, min_value = 1L) {
+	v <- suppressWarnings(as.integer(as.character(x %||% default_value)[[1]]))
+	if (is.na(v) || v < min_value) return(as.integer(default_value))
+	as.integer(v)
+}
+
 apply_sample_replace <- function(sample_names, mode, regex_from = NULL, regex_to = NULL, kv_text = NULL) {
 	mode_value <- normalize_replace_mode(mode, regex_from = regex_from, kv_text = kv_text)
 
@@ -278,7 +290,7 @@ as_numeric_matrix <- function(mat, input_name) {
 	numeric_mat
 }
 
-fit_one_mediation <- function(x_vec, m_vec, y_vec) {
+fit_one_mediation_current <- function(x_vec, m_vec, y_vec) {
 	df <- tibble::tibble(
 		X = as.numeric(x_vec),
 		M = as.numeric(m_vec),
@@ -328,6 +340,75 @@ fit_one_mediation <- function(x_vec, m_vec, y_vec) {
 		indirect_p = p_indirect,
 		prop_mediated = ifelse(c_total == 0, NA_real_, indirect / c_total)
 	)
+}
+
+fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
+	df <- tibble::tibble(
+		X = as.numeric(x_vec),
+		M = as.numeric(m_vec),
+		Y = as.numeric(y_vec)
+	) %>%
+		dplyr::filter(stats::complete.cases(.))
+
+	if (nrow(df) < 8) return(NULL)
+	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
+
+	model_a <- stats::lm(M ~ X, data = df)
+	model_b <- stats::lm(Y ~ X + M, data = df)
+	model_t <- stats::lm(Y ~ X, data = df)
+
+	med_obj <- mediation::mediate(
+		model.m = model_a,
+		model.y = model_b,
+		treat = "X",
+		mediator = "M",
+		sims = sims,
+		boot = FALSE
+	)
+
+	sum_a <- summary(model_a)$coefficients
+	sum_b <- summary(model_b)$coefficients
+	sum_t <- summary(model_t)$coefficients
+
+	if (!("X" %in% rownames(sum_a)) || !("M" %in% rownames(sum_b)) || !("X" %in% rownames(sum_b))) {
+		return(NULL)
+	}
+
+	a <- as.numeric(sum_a["X", "Estimate"])
+	b <- as.numeric(sum_b["M", "Estimate"])
+	c_prime <- as.numeric(sum_b["X", "Estimate"])
+	c_total <- as.numeric(sum_t["X", "Estimate"])
+
+	indirect <- as.numeric(med_obj$d.avg %||% med_obj$d0 %||% NA_real_)
+	p_indirect <- as.numeric(med_obj$d.avg.p %||% med_obj$d0.p %||% NA_real_)
+	direct <- as.numeric(med_obj$z.avg %||% med_obj$z0 %||% c_prime)
+	direct_p <- as.numeric(med_obj$z.avg.p %||% med_obj$z0.p %||% as.numeric(sum_b["X", "Pr(>|t|)"]))
+	total <- as.numeric(med_obj$tau.coef %||% c_total)
+	total_p <- as.numeric(med_obj$tau.p %||% as.numeric(sum_t["X", "Pr(>|t|)"]))
+	prop_mediated <- as.numeric(med_obj$n.avg %||% med_obj$n0 %||% ifelse(total == 0, NA_real_, indirect / total))
+
+	tibble::tibble(
+		n = nrow(df),
+		a_effect = a,
+		a_p = as.numeric(sum_a["X", "Pr(>|t|)"]),
+		b_effect = b,
+		b_p = as.numeric(sum_b["M", "Pr(>|t|)"]),
+		direct_effect = direct,
+		direct_p = direct_p,
+		total_effect = total,
+		total_p = total_p,
+		indirect_effect = indirect,
+		indirect_z = NA_real_,
+		indirect_p = p_indirect,
+		prop_mediated = prop_mediated
+	)
+}
+
+fit_one_mediation <- function(x_vec, m_vec, y_vec, method = "current", sims = 1000L) {
+	if (identical(method, "mediation_pkg")) {
+		return(fit_one_mediation_package(x_vec, m_vec, y_vec, sims = sims))
+	}
+	fit_one_mediation_current(x_vec, m_vec, y_vec)
 }
 
 plot_mediation_sankey <- function(res_df, output_file, top_n = 30) {
@@ -514,6 +595,12 @@ x_sample_replace_mode <- pick_param(data$x_sample_replace_mode, "none")
 y_sample_replace_mode <- pick_param(data$y_sample_replace_mode, "none")
 x_sample_replace_kv <- pick_param(data$x_sample_replace_kv, NULL)
 y_sample_replace_kv <- pick_param(data$y_sample_replace_kv, NULL)
+mediation_method <- normalize_mediation_method(pick_param(data$mediation_method, "current"))
+mediation_sims <- parse_positive_integer(pick_param(data$mediation_sims, 1000L), default_value = 1000L, min_value = 100L)
+
+if (identical(mediation_method, "mediation_pkg") && !requireNamespace("mediation", quietly = TRUE)) {
+	stop(sprintf("参数 mediation_method=mediation_pkg 需要安装 R 包 mediation"))
+}
 
 x_replace_res <- apply_sample_replace(
 	colnames(x_mat),
@@ -544,15 +631,10 @@ colnames(y_mat) <- y_replace_res$values
 
 x_control_samples <- remap_selected_names(colnames(x_parsed$mat), colnames(x_mat), x_parsed$control_cols)
 x_treatment_samples <- remap_selected_names(colnames(x_parsed$mat), colnames(x_mat), x_parsed$treatment_cols)
-y_control_samples <- remap_selected_names(colnames(y_parsed$mat), colnames(y_mat), y_parsed$control_cols)
-y_treatment_samples <- remap_selected_names(colnames(y_parsed$mat), colnames(y_mat), y_parsed$treatment_cols)
 
 x_group_map <- stats::setNames(rep(NA_character_, ncol(x_mat)), colnames(x_mat))
-y_group_map <- stats::setNames(rep(NA_character_, ncol(y_mat)), colnames(y_mat))
 x_group_map[x_control_samples] <- "control"
 x_group_map[x_treatment_samples] <- "treatment"
-y_group_map[y_control_samples] <- "control"
-y_group_map[y_treatment_samples] <- "treatment"
 
 x_samples <- colnames(x_mat)
 y_samples <- colnames(y_mat)
@@ -564,19 +646,10 @@ if (length(common_samples) == 0) {
 	stop(sprintf("x_input 与 y_input 没有共同样本名，无法对齐。x_sample_count=%d, y_sample_count=%d", length(x_samples), length(y_samples)))
 }
 
-group_from_x <- x_group_map[common_samples]
-group_from_y <- y_group_map[common_samples]
-
-conflict_mask <- !is.na(group_from_x) & !is.na(group_from_y) & group_from_x != group_from_y
-if (any(conflict_mask)) {
-	conflict_samples <- common_samples[conflict_mask]
-	stop(sprintf("分组冲突：同一样本在 x_input 与 y_input 的 control/treatment 定义不一致。冲突样本: %s", paste(head(conflict_samples, 20), collapse = ", ")))
-}
-
-group_label <- ifelse(!is.na(group_from_x), group_from_x, group_from_y)
+group_label <- x_group_map[common_samples]
 group_assigned_mask <- !is.na(group_label)
 if (sum(group_assigned_mask) == 0) {
-	stop(sprintf("无法从 control_sample_vars/treatment_sample_vars 推断分组，请至少在 x_input 或 y_input 中选择分组样本列"))
+	stop(sprintf("无法从 x_input 的 control_sample_vars/treatment_sample_vars 推断分组，请在 x_input 中选择分组样本列"))
 }
 
 group_unassigned_samples <- common_samples[!group_assigned_mask]
@@ -618,18 +691,43 @@ group_aligned <- group_aligned[valid_group_mask]
 
 x_output <- file.path(output_dir, "x_aligned.tsv")
 y_output <- file.path(output_dir, "y_aligned.tsv")
-group_output <- file.path(output_dir, "group_aligned.tsv")
+# group_output <- file.path(output_dir, "group_aligned.tsv")
+mediation_input_output <- file.path(output_dir, "mediation_input.tsv")
 mediation_output <- file.path(output_dir, "mediation_all.tsv")
 top_output <- file.path(output_dir, "mediation_top.tsv")
 sankey_output <- file.path(output_dir, "mediation_sankey.pdf")
 triangle_output <- file.path(output_dir, "mediation_triangle.pdf")
 
-readr::write_tsv(as.data.frame(x_aligned) %>% tibble::rownames_to_column("feature"), x_output)
-readr::write_tsv(as.data.frame(y_aligned) %>% tibble::rownames_to_column("feature"), y_output)
-readr::write_tsv(
-	tibble::tibble(sample = names(group_aligned), group = as.integer(group_aligned), group_label = ifelse(group_aligned == 0, "control", "treatment")),
-	group_output
-)
+# readr::write_tsv(as.data.frame(x_aligned) %>% tibble::rownames_to_column("feature"), x_output)
+# readr::write_tsv(as.data.frame(y_aligned) %>% tibble::rownames_to_column("feature"), y_output)
+# readr::write_tsv(
+# 	tibble::tibble(sample = names(group_aligned), group = as.integer(group_aligned), group_label = ifelse(group_aligned == 0, "control", "treatment")),
+# 	group_output
+# )
+
+# x_sample_feature_df <- as.data.frame(t(x_aligned), check.names = FALSE) %>%
+# 	tibble::rownames_to_column("sample") %>%
+# 	dplyr::mutate(
+# 		group = as.integer(group_aligned[.data$sample]),
+# 		group_label = ifelse(.data$group == 0, "control", "treatment")
+# 	)
+# 
+# y_sample_feature_df <- as.data.frame(t(y_aligned), check.names = FALSE) %>%
+# 	tibble::rownames_to_column("sample")
+# 
+# x_feature_only <- x_sample_feature_df %>%
+# 	dplyr::select(-sample, -group, -group_label)
+# colnames(x_feature_only) <- paste0("x__", colnames(x_feature_only))
+# 
+# y_feature_only <- y_sample_feature_df %>%
+# 	dplyr::select(-sample)
+# colnames(y_feature_only) <- paste0("m__", colnames(y_feature_only))
+# 
+# mediation_input_df <- x_sample_feature_df %>%
+# 	dplyr::select(sample, group, group_label) %>%
+# 	dplyr::bind_cols(x_feature_only, y_feature_only)
+# 
+# readr::write_tsv(mediation_input_df, mediation_input_output)
 
 result_list <- vector("list", length = nrow(x_aligned) * nrow(y_aligned))
 idx <- 1L
@@ -641,7 +739,7 @@ for (i in seq_len(nrow(x_aligned))) {
 		y_name <- rownames(y_aligned)[[j]]
 		y_vec <- as.numeric(y_aligned[j, ])
 
-		fit <- fit_one_mediation(x_vec, y_vec, group_aligned)
+		fit <- fit_one_mediation(x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims)
 		if (!is.null(fit)) {
 			result_list[[idx]] <- fit %>%
 				dplyr::mutate(
@@ -669,12 +767,12 @@ mediation_df <- dplyr::bind_rows(result_list) %>%
 
 readr::write_tsv(mediation_df, mediation_output)
 
-top_df <- mediation_df %>%
-	dplyr::slice_head(n = min(30, nrow(mediation_df)))
-readr::write_tsv(top_df, top_output)
-
-sankey_ok <- plot_mediation_sankey(top_df, sankey_output, top_n = 30)
-plot_triangle_path(top_df[1, ], triangle_output)
+# top_df <- mediation_df %>%
+# 	dplyr::slice_head(n = min(30, nrow(mediation_df)))
+# # readr::write_tsv(top_df, top_output)
+# 
+# sankey_ok <- plot_mediation_sankey(top_df, sankey_output, top_n = 30)
+# plot_triangle_path(top_df[1, ], triangle_output)
 
 info_lines <- c(
 	"# Causal Mediation Analysis Output",
@@ -697,23 +795,25 @@ info_lines <- c(
 	sprintf("- unassigned_group_samples: %s", format_vector_for_info(group_unassigned_samples)),
 	"",
 	"## Group Info",
-	sprintf("- group_source: %s", "control_sample_vars + treatment_sample_vars"),
+	sprintf("- group_source: %s", "x_input.control_sample_vars + x_input.treatment_sample_vars"),
 	sprintf("- x_control_sample_count: %d", length(x_control_samples)),
 	sprintf("- x_treatment_sample_count: %d", length(x_treatment_samples)),
-	sprintf("- y_control_sample_count: %d", length(y_control_samples)),
-	sprintf("- y_treatment_sample_count: %d", length(y_treatment_samples)),
 	sprintf("- group_mapping: %s", "control=0; treatment=1"),
+	"",
+	"## Method Params",
+	sprintf("- mediation_method: %s", mediation_method),
+	sprintf("- mediation_sims: %d", mediation_sims),
 	"",
 	"## Mediation Stats",
 	sprintf("- x_feature_count: %d", nrow(x_aligned)),
 	sprintf("- y_feature_count: %d", nrow(y_aligned)),
 	sprintf("- tested_pair_count: %d", nrow(mediation_df)),
 	sprintf("- significant_indirect_q_lt_0.05: %d", sum(mediation_df$indirect_q < 0.05, na.rm = TRUE)),
-	sprintf("- top_pair_x: %s", top_df$x_feature[[1]]),
-	sprintf("- top_pair_y: %s", top_df$y_feature[[1]]),
-	sprintf("- top_pair_indirect: %.4g", top_df$indirect_effect[[1]]),
-	sprintf("- top_pair_indirect_p: %.4g", top_df$indirect_p[[1]]),
-	sprintf("- top_pair_indirect_q: %.4g", top_df$indirect_q[[1]]),
+	# sprintf("- top_pair_x: %s", top_df$x_feature[[1]]),
+	# sprintf("- top_pair_y: %s", top_df$y_feature[[1]]),
+	# sprintf("- top_pair_indirect: %.4g", top_df$indirect_effect[[1]]),
+	# sprintf("- top_pair_indirect_p: %.4g", top_df$indirect_p[[1]]),
+	# sprintf("- top_pair_indirect_q: %.4g", top_df$indirect_q[[1]]),
 	"",
 	"## Sample Name Replace Rules",
 	sprintf("- x_sample_replace_mode: %s", x_replace_res$mode),
@@ -730,13 +830,35 @@ info_lines <- c(
 	sprintf("- y_sample_replace_kv: %s", format_kv_pairs_for_info(y_replace_res$kv_keys, y_replace_res$kv_values)),
 	"",
 	"## Output Files",
-	sprintf("- x_aligned_file: %s", x_output),
-	sprintf("- y_aligned_file: %s", y_output),
-	sprintf("- group_aligned_file: %s", group_output),
+	# sprintf("- x_aligned_file: %s", x_output),
+	# sprintf("- y_aligned_file: %s", y_output),
+	# sprintf("- group_aligned_file: %s", group_output),
+	# sprintf("- mediation_input_file: %s", mediation_input_output),
 	sprintf("- mediation_all_file: %s", mediation_output),
-	sprintf("- mediation_top_file: %s", top_output),
-	sprintf("- mediation_sankey_file: %s", ifelse(sankey_ok, sankey_output, "none")),
-	sprintf("- mediation_triangle_file: %s", triangle_output)
+	# sprintf("- mediation_top_file: %s", top_output),
+	# sprintf("- mediation_sankey_file: %s", ifelse(sankey_ok, sankey_output, "none")),
+	# sprintf("- mediation_triangle_file: %s", triangle_output),
+	"",
+	"## mediation_all.tsv Columns",
+	sprintf("- n: %s", "用于该条中介模型拟合的有效样本数（complete cases）"),
+	sprintf("- a_effect: %s", "路径 a 的效应值，X -> M 的回归系数"),
+	sprintf("- a_p: %s", "路径 a 的显著性 p 值"),
+	sprintf("- b_effect: %s", "路径 b 的效应值，M -> Y（控制 X）回归系数"),
+	sprintf("- b_p: %s", "路径 b 的显著性 p 值"),
+	sprintf("- direct_effect: %s", "直接效应 c'，X -> Y（控制 M）"),
+	sprintf("- direct_p: %s", "直接效应 c' 的 p 值"),
+	sprintf("- total_effect: %s", "总效应 c，X -> Y（不控制 M）"),
+	sprintf("- total_p: %s", "总效应 c 的 p 值"),
+	sprintf("- indirect_effect: %s", "间接效应，通常为 a*b；mediation 包模式下取 ACME"),
+	sprintf("- indirect_z: %s", "间接效应的 Z 统计量；current(Sobel) 模式有效，mediation_pkg 模式为 NA"),
+	sprintf("- indirect_p: %s", "间接效应的 p 值；current 模式为 Sobel p 值，mediation_pkg 模式为 ACME p 值"),
+	sprintf("- prop_mediated: %s", "中介比例，约为 indirect_effect / total_effect"),
+	sprintf("- x_feature: %s", "该模型中的 X 特征名（来自 x_input）"),
+	sprintf("- y_feature: %s", "该模型中的 M 特征名（来自 y_input）"),
+	sprintf("- group_feature: %s", "该模型中的 Y 变量说明，当前为 control_vs_treatment"),
+	sprintf("- indirect_q: %s", "indirect_p 经 BH 方法多重检验校正后的 q 值"),
+	sprintf("- direct_q: %s", "direct_p 经 BH 方法多重检验校正后的 q 值"),
+	sprintf("- total_q: %s", "total_p 经 BH 方法多重检验校正后的 q 值")
 )
 
 readr::write_lines(info_lines, file.path(output_dir, "output.md"))

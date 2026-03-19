@@ -126,6 +126,38 @@ if(family=="binomial"){
   message("process outcome!")
 }
 
+columns_attribute <- params$logistic$columns_attribute
+if (!is.null(columns_attribute) && length(columns_attribute) != 0) {
+  if (is.data.frame(columns_attribute)) {
+    columns_attribute_df <- columns_attribute
+  } else {
+    columns_attribute_df <- dplyr::bind_rows(columns_attribute)
+  }
+
+  columns_attribute_df$column <- trimws(as.character(columns_attribute_df$column))
+  columns_attribute_df$value <- trimws(as.character(columns_attribute_df$value))
+
+  for (i in seq_len(nrow(columns_attribute_df))) {
+    col_name <- columns_attribute_df$column[[i]]
+    ref_value <- columns_attribute_df$value[[i]]
+
+    if (!(col_name %in% colnames(df_1))) {
+      message(str_glue("skip columns_attribute: column '{col_name}' not found in data"))
+      next
+    }
+
+    df_1[[col_name]] <- as.factor(df_1[[col_name]])
+
+    if (!is.na(ref_value) && nzchar(ref_value)) {
+      if (ref_value %in% levels(df_1[[col_name]])) {
+        df_1[[col_name]] <- stats::relevel(df_1[[col_name]], ref = ref_value)
+      } else {
+        message(str_glue("skip relevel: reference '{ref_value}' not found in column '{col_name}'"))
+      }
+    }
+  }
+}
+
 # df <- read_tsv(params$logistic$content) 
 # df[["outcome"]] <-  ifelse(df[[outcome]]  ==1, 1, 0)
 

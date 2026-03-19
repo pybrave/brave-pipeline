@@ -1,0 +1,214 @@
+{
+  "x_input": {
+    "id": 7001,
+    "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+    "sample_id": null,
+    "file_name": "肠道菌群_CM_SM",
+    "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+    "file_type": "collected",
+    "content": "/opt/brave_prod/workspace/analysis/3ab6cf0a-d53d-4637-a039-ea347e0d435f/99ffdb15-fa10-4a31-a12f-34e8d7656789/b12aac19-4dab-4504-ac09-dd9bfe0b38b6/output/肠道菌群_CM_SM.tsv",
+    "file": 7001,
+    "control_sample_vars": [
+      {
+        "id": 7001,
+        "sample_name": "cm135",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm135"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm172",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm172"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm173",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm173"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm175",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm175"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm177",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm177"
+      },
+      {
+        "id": 7001,
+        "sample_name": "cm179",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "cm179"
+      }
+    ],
+    "treatment_sample_vars": [
+      {
+        "id": 7001,
+        "sample_name": "sm162",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm162"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm163",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm163"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm165",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm165"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm166",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm166"
+      },
+      {
+        "id": 7001,
+        "sample_name": "sm169",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "sm169"
+      },
+      {
+        "id": 7001,
+        "sample_name": "Sm170",
+        "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+        "columns_name": "Sm170"
+      }
+    ],
+    "feature_var": {
+      "id": 7001,
+      "sample_name": "MS2 name",
+      "analysis_result_id": "43816b69-edba-4e6e-a37a-71e3ea1a2151",
+      "columns_name": "MS2 name"
+    },
+    "form_type": "CollectedSampleSelect",
+    "groups": [
+      "control_sample_vars",
+      "treatment_sample_vars",
+      "feature_var"
+    ]
+  },
+  "y_input": {
+    "id": 7003,
+    "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+    "sample_id": null,
+    "file_name": "代谢物_CM_SM_v2.xlsx",
+    "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+    "file_type": "collected",
+    "content": "/opt/brave_prod/workspace/data/3ab6cf0a-d53d-4637-a039-ea347e0d435f/代谢物_CM_SM_v2.tsv",
+    "file": 7003,
+    "sample_vars": [
+      {
+        "id": 7003,
+        "sample_name": "CM135ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM135ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "CM172ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM172ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "CM173ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM173ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "CM175ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM175ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "CM177ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM177ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "CM179ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "CM179ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM162ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM162ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM163ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM163ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM165ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM165ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM166ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM166ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM169ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM169ce"
+      },
+      {
+        "id": 7003,
+        "sample_name": "SM170ce",
+        "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+        "columns_name": "SM170ce"
+      }
+    ],
+    "feature_var": {
+      "id": 7003,
+      "sample_name": "Row.names",
+      "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+      "columns_name": "Row.names"
+    },
+    "form_type": "CollectedSampleSelect",
+    "groups": [
+      "sample_vars",
+      "feature_var"
+    ]
+  },
+  "y_sample_replace_mode": "kv",
+  "y_sample_replace_kv": "CM135ce:cm135\nCM172ce:cm172\nCM173ce:cm173\nCM175ce:cm175\nCM177ce:cm177\nCM179ce:cm179\nSM162ce:sm162\nSM163ce:sm163\nSM165ce:sm165\nSM166ce:sm166\nSM169ce:sm169\nSM170ce:Sm170",
+  "colors": {
+    "x_input": "-",
+    "y_input": "-"
+  },
+  "groups_name": {
+    "x_input": "-",
+    "y_input": "-"
+  },
+  "re_groups_name": {
+    "x_input": "-",
+    "y_input": "-"
+  },
+  "groups": [
+    "x_input",
+    "y_input"
+  ],
+  "pipeline_dir": "/opt/brave_prod/workspace/pipeline"
+}
