@@ -633,13 +633,32 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 		if (!is.null(panel_col) && panel_col %in% colnames(data_for_plot) && panel_col %in% colnames(stats_df)) {
 			y_max <- data_for_plot %>%
 				dplyr::group_by(.data[[panel_col]]) %>%
-				dplyr::summarise(y_pos = safe_max(.data[[y_axis_col]]) * 1.08, .groups = "drop")
+				dplyr::summarise(
+					y_max = safe_max(.data[[y_axis_col]]),
+					y_min = suppressWarnings(min(.data[[y_axis_col]], na.rm = TRUE)),
+					.groups = "drop"
+				) %>%
+				dplyr::mutate(
+					y_span = dplyr::if_else(
+						is.finite(y_max - y_min) & (y_max - y_min) > 0,
+						y_max - y_min,
+						dplyr::if_else(is.finite(y_max) & y_max != 0, abs(y_max), 1)
+					),
+					y_pos = y_max + 0.08 * y_span
+				) %>%
+				dplyr::select(.data[[panel_col]], y_pos)
 
 			stats_df <- stats_df %>%
 				dplyr::left_join(y_max, by = panel_col)
 		} else {
+			y_max_value <- safe_max(data_for_plot[[y_axis_col]])
+			y_min_value <- suppressWarnings(min(data_for_plot[[y_axis_col]], na.rm = TRUE))
+			y_span_value <- y_max_value - y_min_value
+			if (!is.finite(y_span_value) || y_span_value <= 0) {
+				y_span_value <- ifelse(is.finite(y_max_value) && y_max_value != 0, abs(y_max_value), 1)
+			}
 			stats_df <- stats_df %>%
-				dplyr::mutate(y_pos = safe_max(data_for_plot[[y_axis_col]]) * 1.08)
+				dplyr::mutate(y_pos = y_max_value + 0.08 * y_span_value)
 		}
 	} else {
 		y_max <- data_for_plot %>%

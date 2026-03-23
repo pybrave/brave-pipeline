@@ -365,8 +365,9 @@ fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
 	if (nrow(df) < 8) return(NULL)
 	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
 
-	model_a <- stats::lm(M ~ X, data = df)
-	model_b <- stats::lm(Y ~ X + M, data = df)
+	# model_a <- stats::lm(M ~ X, data = df)
+	model_a <- glm(M ~ X, data = df, family ="gaussian")
+	model_b <- glm(Y ~ X + M, data = df, family = "binomial")
 	model_t <- stats::lm(Y ~ X, data = df)
 
 	med_obj <- mediation::mediate(

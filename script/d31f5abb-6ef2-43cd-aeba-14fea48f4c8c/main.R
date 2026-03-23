@@ -507,6 +507,7 @@ show_colnames <- to_bool(data$heatmap_show_colnames, TRUE)
 axis_fontsize_x <- to_number(data$axis_fontsize_x, default = 10, min_value = 1)
 axis_fontsize_y <- to_number(data$axis_fontsize_y, default = 10, min_value = 1)
 legend_fontsize <- to_number(data$legend_fontsize, default = 11, min_value = 1)
+signif_marker_fontsize <- to_number(data$signif_marker_fontsize %||% data$fontsize_number, default = 10, min_value = 1)
 title_fontsize <- to_number(data$title_fontsize, default = 14, min_value = 1)
 title_position <- normalize_title_position(data$title_position, default = "center")
 x_axis_rotation <- normalize_angle_col(data$x_axis_rotation, default = 45)
@@ -529,7 +530,7 @@ heatmap_obj <- pheatmap::pheatmap(
 	cluster_cols = cluster_cols,
 	show_rownames = show_rownames,
 	show_colnames = show_colnames,
-	fontsize_number = 10,
+	fontsize_number = signif_marker_fontsize,
 	fontsize = legend_fontsize,
 	fontsize_row = axis_fontsize_y,
 	fontsize_col = axis_fontsize_x,
@@ -605,6 +606,7 @@ info_lines <- c(
 	sprintf("- heatmap_height: %s", heatmap_height),
 	sprintf("- axis_fontsize_x: %s", axis_fontsize_x),
 	sprintf("- axis_fontsize_y: %s", axis_fontsize_y),
+	sprintf("- signif_marker_fontsize: %s", signif_marker_fontsize),
 	sprintf("- legend_fontsize: %s", legend_fontsize),
 	sprintf("- title_fontsize: %s", title_fontsize),
 	sprintf("- title_position: %s", title_position),

@@ -191,6 +191,19 @@
       "initialValue": true
     },
     {
+      "name": "signif_marker_fontsize",
+      "label": "significance marker font size",
+      "type": "BaseInputNumber",
+      "col": 12,
+      "initialValue": 10,
+      "depends": [
+        {
+          "name": "show_signif_marker",
+          "value": true
+        }
+      ]
+    },
+    {
       "name": "signif_by",
       "label": "significance by",
       "type": "BaseSelect",
