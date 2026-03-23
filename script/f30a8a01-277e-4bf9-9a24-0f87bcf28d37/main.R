@@ -170,7 +170,10 @@ format_stat_value <- function(x, digits_option = "3") {
 	out <- rep("NA", length(x))
 	valid_idx <- which(!is.na(x))
 	if (length(valid_idx) > 0) {
-		out[valid_idx] <- sprintf(fmt, x[valid_idx])
+		formatted <- sprintf(fmt, x[valid_idx])
+		formatted <- sub("0+$", "", formatted)
+		formatted <- sub("\\.$", "", formatted)
+		out[valid_idx] <- formatted
 	}
 	out
 }

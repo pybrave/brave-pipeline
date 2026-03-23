@@ -404,13 +404,25 @@
       "name": "point_size",
       "label": "Point Size",
       "type": "BaseInputNumber",
-      "initialValue": 1.5,
+      "initialValue": 4,
       "col": 12
     },
     {
       "name": "plot_width",
       "label": "Plot Width",
       "type": "BaseInputNumber",
+      "depends": {
+        "or": [
+          {
+            "name": "panel_type",
+            "value": "none"
+          },
+          {
+            "name": "panel_type",
+            "value": "free_x"
+          }
+        ]
+      },
       "initialValue": 12,
       "col": 12
     },
@@ -419,6 +431,12 @@
       "label": "Plot Height",
       "type": "BaseInputNumber",
       "initialValue": 7,
+      "depends": [
+        {
+          "name": "panel_type",
+          "value": "split"
+        }
+      ],
       "col": 12
     },
     {
@@ -451,7 +469,7 @@
       "name": "split_width_base",
       "label": "Split Width Base",
       "type": "BaseInputNumber",
-      "initialValue": 3,
+      "initialValue": 0,
       "depends": [
         {
           "name": "panel_type",
@@ -464,7 +482,7 @@
       "name": "split_width_step",
       "label": "Split Width Step Per Feature",
       "type": "BaseInputNumber",
-      "initialValue": 0.35,
+      "initialValue": 0,
       "depends": [
         {
           "name": "panel_type",
