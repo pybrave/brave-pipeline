@@ -146,6 +146,18 @@ parse_positive_integer <- function(x, default_value, min_value = 1L) {
 	as.integer(v)
 }
 
+resolve_parallel_cores <- function(user_cores = NULL) {
+	detected <- parallel::detectCores(logical = TRUE)
+	if (is.na(detected) || detected < 1) detected <- 1L
+	default_cores <- max(1L, as.integer(detected) - 1L)
+	cores <- parse_positive_integer(user_cores, default_value = default_cores, min_value = 1L)
+	cores <- min(as.integer(cores), as.integer(detected))
+	if (.Platform$OS.type == "windows") {
+		return(1L)
+	}
+	cores
+}
+
 apply_sample_replace <- function(sample_names, mode, regex_from = NULL, regex_to = NULL, kv_text = NULL) {
 	mode_value <- normalize_replace_mode(mode, regex_from = regex_from, kv_text = kv_text)
 
@@ -597,6 +609,7 @@ x_sample_replace_kv <- pick_param(data$x_sample_replace_kv, NULL)
 y_sample_replace_kv <- pick_param(data$y_sample_replace_kv, NULL)
 mediation_method <- normalize_mediation_method(pick_param(data$mediation_method, "current"))
 mediation_sims <- parse_positive_integer(pick_param(data$mediation_sims, 1000L), default_value = 1000L, min_value = 100L)
+parallel_cores <- resolve_parallel_cores(pick_param(data$parallel_cores, NULL))
 
 if (identical(mediation_method, "mediation_pkg") && !requireNamespace("mediation", quietly = TRUE)) {
 	stop(sprintf("参数 mediation_method=mediation_pkg 需要安装 R 包 mediation"))
@@ -729,11 +742,11 @@ triangle_output <- file.path(output_dir, "mediation_triangle.pdf")
 # 
 # readr::write_tsv(mediation_input_df, mediation_input_output)
 
-result_list <- vector("list", length = nrow(x_aligned) * nrow(y_aligned))
-idx <- 1L
-for (i in seq_len(nrow(x_aligned))) {
+calc_for_one_x <- function(i) {
 	x_name <- rownames(x_aligned)[[i]]
 	x_vec <- as.numeric(x_aligned[i, ])
+	one_x_results <- vector("list", length = nrow(y_aligned))
+	local_idx <- 1L
 
 	for (j in seq_len(nrow(y_aligned))) {
 		y_name <- rownames(y_aligned)[[j]]
@@ -741,18 +754,29 @@ for (i in seq_len(nrow(x_aligned))) {
 
 		fit <- fit_one_mediation(x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims)
 		if (!is.null(fit)) {
-			result_list[[idx]] <- fit %>%
+			one_x_results[[local_idx]] <- fit %>%
 				dplyr::mutate(
 					x_feature = x_name,
 					y_feature = y_name,
 					group_feature = "control_vs_treatment"
 				)
-			idx <- idx + 1L
+			local_idx <- local_idx + 1L
 		}
 	}
+
+	one_x_results[seq_len(max(0, local_idx - 1L))]
 }
 
-result_list <- result_list[seq_len(max(0, idx - 1L))]
+x_indices <- seq_len(nrow(x_aligned))
+if (parallel_cores > 1L && length(x_indices) > 1L) {
+	message(sprintf("中介分析并行计算开启: parallel_cores=%d", parallel_cores))
+	result_nested <- parallel::mclapply(x_indices, calc_for_one_x, mc.cores = parallel_cores)
+} else {
+	message(sprintf("中介分析串行计算: parallel_cores=%d", parallel_cores))
+	result_nested <- lapply(x_indices, calc_for_one_x)
+}
+
+result_list <- unlist(result_nested, recursive = FALSE, use.names = FALSE)
 if (length(result_list) == 0) {
 	stop(sprintf("没有可用的中介模型结果（可能是缺失值过多或变量方差为 0）"))
 }
@@ -803,6 +827,7 @@ info_lines <- c(
 	"## Method Params",
 	sprintf("- mediation_method: %s", mediation_method),
 	sprintf("- mediation_sims: %d", mediation_sims),
+	sprintf("- parallel_cores: %d", parallel_cores),
 	"",
 	"## Mediation Stats",
 	sprintf("- x_feature_count: %d", nrow(x_aligned)),

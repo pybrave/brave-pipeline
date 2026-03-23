@@ -53,6 +53,52 @@
           "message": "This field cannot be empty!"
         }
       ]
+    }, {
+      "name": "x_sample_replace_mode",
+      "label": "x sample replace mode",
+      "type": "BaseSelect",
+      "initialValue": "none",
+      "data": [
+        { "label": "None", "value": "none" },
+        { "label": "Regex", "value": "regex" },
+        { "label": "K:V TextArea", "value": "kv" }
+      ]
+    },
+    {
+      "name": "x_sample_replace_from",
+      "label": "x sample replace from (regex, ; separated)",
+      "type": "BaseInput",
+      "depends": [
+        {
+          "name": "x_sample_replace_mode",
+          "value": "regex"
+        }
+      ],
+      "initialValue": ""
+    },
+    {
+      "name": "x_sample_replace_to",
+      "label": "x sample replace to (; separated)",
+      "type": "BaseInput",
+      "depends": [
+        {
+          "name": "x_sample_replace_mode",
+          "value": "regex"
+        }
+      ],
+      "initialValue": ""
+    },
+    {
+      "name": "x_sample_replace_kv",
+      "label": "x sample replace K:V lines",
+      "type": "BaseTextArea",
+      "depends": [
+        {
+          "name": "x_sample_replace_mode",
+          "value": "kv"
+        }
+      ],
+      "initialValue": ""
     },
     {
       "name": "y_sample_replace_mode",
@@ -137,6 +183,12 @@
         }
       ],
       "initialValue": "1000"
+    },
+    {
+      "name": "parallel_cores",
+      "label": "parallel cores (optional)",
+      "type": "BaseInput",
+      "initialValue": ""
     }
   ]
 }

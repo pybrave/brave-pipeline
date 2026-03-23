@@ -364,6 +364,17 @@
       "label": "plot title",
       "type": "BaseInput",
       "initialValue": "Correlation Heatmap"
+    },{
+        "name":"delete_x_feature",
+        "label":"Delete x feature",
+        "type":"BaseTextAreaNum",
+        "initialValue":""
+    },
+    {
+        "name": "delete_y_feature",
+        "label": "Delete y feature",
+        "type": "BaseTextAreaNum",
+        "initialValue": ""
     }
   ]
 }
