@@ -347,6 +347,17 @@ if (!is.finite(y_log_offset) || y_log_offset < 0) {
 if (y_transform == "none") {
 	y_log_offset <- 0
 }
+
+y_label_plot <- y_label
+if (y_transform != "none") {
+	label_inner <- y_label_plot
+	if (is.null(label_inner) || !nzchar(trimws(label_inner))) {
+		y_label_plot <- ""
+	}else{
+		y_label_plot <- sprintf("log(%s)", label_inner)
+	}
+}
+
 if (!is.finite(plot_width) || plot_width <= 0) {
 	plot_width <- 12
 }
@@ -683,7 +694,7 @@ add_common_style <- function(plot_in, title_text = "") {
 		) +
 		labs(
 			x = x_label,
-			y = y_label,
+			y = y_label_plot,
 			title = title_text,
 			color = legend_title_text,
 			fill = legend_title_text
@@ -873,6 +884,7 @@ info_lines <- c(
 	sprintf("- group2_color: %s", group2_color),
 	sprintf("- x_label: %s", x_label),
 	sprintf("- y_label: %s", y_label),
+	sprintf("- y_label_plot: %s", y_label_plot),
 	sprintf("- y_transform: %s", y_transform),
 	sprintf("- y_axis_digits: %s", y_axis_digits),
 	sprintf("- y_log_offset: %s", y_log_offset),
