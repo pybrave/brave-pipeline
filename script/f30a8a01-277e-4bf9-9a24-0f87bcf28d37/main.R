@@ -157,6 +157,22 @@ format_vector_for_info <- function(x) {
 	paste(x, collapse = ", ")
 }
 
+split_delete_tokens <- function(x) {
+	if (is.null(x) || length(x) == 0) return(character())
+	v <- as.character(x[[1]])
+	if (is.na(v) || trimws(v) == "") return(character())
+
+	has_newline <- grepl("\\r|\\n", v)
+	if (has_newline) {
+		tokens <- unlist(strsplit(v, "\\r?\\n", perl = TRUE), use.names = FALSE)
+	} else {
+		tokens <- unlist(strsplit(v, ",", fixed = TRUE), use.names = FALSE)
+	}
+
+	tokens <- trimws(tokens)
+	unique(tokens[tokens != ""])
+}
+
 params <- jsonlite::fromJSON("params.json", simplifyVector = FALSE)
 
 input_file <- params$input_file
@@ -166,11 +182,13 @@ if (is.null(input_file) || is.null(input_file$content)) {
 
 file_path <- input_file$content
 df <- readr::read_tsv(file_path, show_col_types = FALSE)
+input_row_count_before_filter <- nrow(df)
 
 feature_col <- extract_single_column(input_file$x_var, default = "Row.names")
 panel_col <- extract_single_column(input_file$panel_var, default = NULL)
 p_col_selected <- extract_single_column(input_file$p_col, default = "P_value")
 q_col_selected <- extract_single_column(input_file$q_col, default = "Qvalue")
+delete_x_features <- split_delete_tokens(params$x_feature)
 # y_label_default <- extract_single_column(input_file$y_var, default = "abundance")
 
 group1_cols <- extract_column_names(input_file$group1_vars)
@@ -187,6 +205,25 @@ missing_cols <- setdiff(required_cols, colnames(df))
 if (length(missing_cols) > 0) {
 	stop(sprintf("输入文件缺少列: %s", paste(missing_cols, collapse = ", ")))
 }
+
+delete_x_features_found <- character()
+delete_x_features_missing <- character()
+if (length(delete_x_features) > 0) {
+	feature_values <- as.character(df[[feature_col]])
+	delete_x_features_found <- intersect(delete_x_features, feature_values)
+	delete_x_features_missing <- setdiff(delete_x_features, feature_values)
+
+	if (length(delete_x_features_found) > 0) {
+		df <- df %>%
+			dplyr::filter(!(as.character(.data[[feature_col]]) %in% delete_x_features_found))
+	}
+	if (nrow(df) == 0) {
+		stop("x_feature 过滤后无可用数据")
+	}
+}
+
+input_row_count_after_filter <- nrow(df)
+filtered_feature_count <- length(delete_x_features_found)
 
 long_df <- df %>%
 	dplyr::select(dplyr::all_of(required_cols)) %>%
@@ -642,6 +679,12 @@ info_lines <- c(
 	"## Selected Columns",
 	sprintf("- feature_col: %s", feature_col),
 	sprintf("- panel_col: %s", as.character(panel_col %||% "none")),
+	sprintf("- x_feature_filter_requested_count: %d", length(delete_x_features)),
+	sprintf("- x_feature_filter_requested: %s", format_vector_for_info(delete_x_features)),
+	sprintf("- x_feature_filter_found_count: %d", length(delete_x_features_found)),
+	sprintf("- x_feature_filter_found: %s", format_vector_for_info(delete_x_features_found)),
+	sprintf("- x_feature_filter_missing_count: %d", length(delete_x_features_missing)),
+	sprintf("- x_feature_filter_missing: %s", format_vector_for_info(delete_x_features_missing)),
 	sprintf("- selected_sample_count: %d", length(selected_samples)),
 	sprintf("- selected_samples: %s", format_vector_for_info(selected_samples)),
 	sprintf("- group1_sample_count: %d", length(group1_cols)),
@@ -686,7 +729,9 @@ info_lines <- c(
 	sprintf("- output_name: %s", output_name),
 	"",
 	"## Plot Stats",
-	sprintf("- input_row_count: %d", nrow(df)),
+	sprintf("- input_row_count_before_filter: %d", input_row_count_before_filter),
+	sprintf("- input_row_count_after_filter: %d", input_row_count_after_filter),
+	sprintf("- input_row_count_removed_by_x_feature: %d", filtered_feature_count),
 	sprintf("- feature_count: %d", feature_count),
 	sprintf("- panel_count: %d", panel_count),
 	sprintf("- long_value_count_total: %d", long_value_n),

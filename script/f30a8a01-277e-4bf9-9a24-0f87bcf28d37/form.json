@@ -533,6 +533,12 @@
           "message": "Output file name is required"
         }
       ]
+    },{
+        "name":"x_feature",
+        "label":"Delete x feature",
+        "type":"BaseTextAreaNum",
+        "required":"true",
+        "initialValue":""
     }
   ]
 }
