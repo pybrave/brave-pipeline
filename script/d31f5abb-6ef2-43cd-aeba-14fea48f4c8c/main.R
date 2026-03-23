@@ -98,6 +98,15 @@ split_rule_tokens <- function(x) {
 	tokens[tokens != ""]
 }
 
+split_comma_tokens <- function(x) {
+	if (is.null(x) || length(x) == 0) return(character())
+	v <- as.character(x[[1]])
+	if (is.na(v) || trimws(v) == "") return(character())
+	tokens <- unlist(strsplit(v, ",", fixed = TRUE), use.names = FALSE)
+	tokens <- trimws(tokens)
+	unique(tokens[tokens != ""])
+}
+
 normalize_replace_mode <- function(mode, regex_from = NULL, kv_text = NULL) {
 	v <- tolower(trimws(as.character(mode %||% "")[[1]]))
 	if (v %in% c("none", "regex", "kv")) return(v)
@@ -370,6 +379,21 @@ data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 x_mat_raw <- read_selected_matrix(data$x_input, "x_input")
 y_mat_raw <- read_selected_matrix(data$y_input, "y_input")
 
+delete_x_features <- split_comma_tokens(data$delete_x_feature)
+delete_y_features <- split_comma_tokens(data$delete_y_feature)
+
+x_delete_features_found <- intersect(delete_x_features, rownames(x_mat_raw))
+y_delete_features_found <- intersect(delete_y_features, rownames(y_mat_raw))
+x_delete_features_missing <- setdiff(delete_x_features, rownames(x_mat_raw))
+y_delete_features_missing <- setdiff(delete_y_features, rownames(y_mat_raw))
+
+if (length(x_delete_features_found) > 0) {
+	x_mat_raw <- x_mat_raw[!(rownames(x_mat_raw) %in% x_delete_features_found), , drop = FALSE]
+}
+if (length(y_delete_features_found) > 0) {
+	y_mat_raw <- y_mat_raw[!(rownames(y_mat_raw) %in% y_delete_features_found), , drop = FALSE]
+}
+
 x_feature_count_before_na_omit <- nrow(x_mat_raw)
 y_feature_count_before_na_omit <- nrow(y_mat_raw)
 
@@ -589,6 +613,14 @@ info_lines <- c(
 	sprintf("- y_sample_replace_kv: %s", format_kv_pairs_for_info(y_replace_res$kv_keys, y_replace_res$kv_values)),
 	"",
 	"## Matrix Stats",
+	sprintf("- x_delete_feature_requested_count: %d", length(delete_x_features)),
+	sprintf("- x_delete_feature_removed_count: %d", length(x_delete_features_found)),
+	sprintf("- x_delete_feature_removed: %s", format_vector_for_info(x_delete_features_found)),
+	sprintf("- x_delete_feature_missing: %s", format_vector_for_info(x_delete_features_missing)),
+	sprintf("- y_delete_feature_requested_count: %d", length(delete_y_features)),
+	sprintf("- y_delete_feature_removed_count: %d", length(y_delete_features_found)),
+	sprintf("- y_delete_feature_removed: %s", format_vector_for_info(y_delete_features_found)),
+	sprintf("- y_delete_feature_missing: %s", format_vector_for_info(y_delete_features_missing)),
 	sprintf("- x_feature_count_before_na_omit: %d", x_feature_count_before_na_omit),
 	sprintf("- x_na_omit_removed_count: %d", x_na_omit_removed_count),
 	sprintf("- x_na_omit_removed_features: %s", format_vector_for_info(x_na_omit_removed_features)),
