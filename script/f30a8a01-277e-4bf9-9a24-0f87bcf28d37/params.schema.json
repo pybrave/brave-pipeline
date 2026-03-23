@@ -46,6 +46,10 @@
     "group2_color": { "type": "string", "minLength": 1 },
     "x_label": { "type": "string" },
     "y_label": { "type": "string" },
+    "y_axis_digits": {
+      "type": "string",
+      "enum": ["none", "2"]
+    },
     "output_name": { "type": "string", "minLength": 1 }
   },
   "additionalProperties": true

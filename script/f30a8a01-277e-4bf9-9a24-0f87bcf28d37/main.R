@@ -309,6 +309,7 @@ group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "gro
 x_label <- params$x_label %||%  "" #feature_col
 y_label <- params$y_label %||%  "" #"abundance"
 y_transform <- params$y_transform %||% "none"
+y_axis_digits <- as.character(params$y_axis_digits %||% "none")
 y_log_offset <- as.numeric(params$y_log_offset %||% 1e-6)
 plot_title <- params$title %||% ""
 title_size <- as.numeric(params$title_size %||% 14)
@@ -327,6 +328,9 @@ if (!(legend_position %in% c("top", "bottom", "left", "right", "none"))) {
 }
 if (!(y_transform %in% c("none", "log10", "log2", "ln"))) {
 	y_transform <- "none"
+}
+if (!(y_axis_digits %in% c("none", "2"))) {
+	y_axis_digits <- "none"
 }
 if (!is.finite(y_log_offset) || y_log_offset < 0) {
 	y_log_offset <- 0
@@ -676,12 +680,20 @@ add_common_style <- function(plot_in, title_text = "") {
 			plot.title = element_text(size = title_size, face = "bold", hjust = title_hjust)
 		)
 
+	y_axis_labels <- if (y_axis_digits == "2") {
+		scales::label_number(accuracy = 0.01, trim = TRUE)
+	} else {
+		waiver()
+	}
+
 	if (y_transform == "log10") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log10")
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log10", labels = y_axis_labels)
 	} else if (y_transform == "log2") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log2")
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log2", labels = y_axis_labels)
 	} else if (y_transform == "ln") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log")
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log", labels = y_axis_labels)
+	} else if (y_axis_digits == "2") {
+		plot_with_style <- plot_with_style + scale_y_continuous(labels = y_axis_labels)
 	}
 
 	plot_with_style
@@ -824,6 +836,7 @@ info_lines <- c(
 	sprintf("- x_label: %s", x_label),
 	sprintf("- y_label: %s", y_label),
 	sprintf("- y_transform: %s", y_transform),
+	sprintf("- y_axis_digits: %s", y_axis_digits),
 	sprintf("- y_log_offset: %s", y_log_offset),
 	sprintf("- y_log_offset_applied: %s", y_log_offset_applied),
 	sprintf("- title: %s", plot_title),

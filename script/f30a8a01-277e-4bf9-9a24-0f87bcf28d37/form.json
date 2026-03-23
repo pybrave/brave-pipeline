@@ -127,6 +127,7 @@
         }
       ]
     },
+   
     {
       "name": "plot_type",
       "label": "Plot Type",
@@ -218,6 +219,10 @@
           "message": "This field cannot be empty!"
         }
       ]
+    },
+    {
+      "type": "Divider",
+      "text": "统计标注参数"
     },
     {
       "name": "show_stats",
@@ -392,6 +397,10 @@
       ]
     },
     {
+      "type": "Divider",
+      "text": "点与画布参数"
+    },
+    {
       "name": "point_size",
       "label": "Point Size",
       "type": "BaseInputNumber",
@@ -465,6 +474,10 @@
       "col": 12
     },
     {
+      "type": "Divider",
+      "text": "坐标轴样式"
+    },
+    {
       "name": "x_text_angle",
       "label": "X Axis Text Angle",
       "type": "BaseInputNumber",
@@ -491,6 +504,10 @@
       "type": "BaseInputNumber",
       "initialValue": 12,
       "col": 12
+    },
+    {
+      "type": "Divider",
+      "text": "图例参数"
     },
     {
       "name": "legend_text_size",
@@ -534,6 +551,7 @@
       "type": "BaseInput",
       "initialValue": "other"
     },
+    
     {
       "name": "group1_color",
       "label": "Group1 Color",
@@ -547,6 +565,10 @@
       "required": true,
       "type": "BaseColorPicker",
       "col": 12
+    },
+    {
+      "type": "Divider",
+      "text": "坐标标签与变换"
     },
     {
       "name": "x_label",
@@ -583,6 +605,22 @@
       ]
     },
     {
+      "name": "y_axis_digits",
+      "label": "Y Axis Decimal Places",
+      "type": "BaseSelect",
+      "initialValue": "none",
+      "data": [
+        {
+          "label": "none",
+          "value": "none"
+        },
+        {
+          "label": "2",
+          "value": "2"
+        }
+      ]
+    },
+    {
       "name": "y_log_offset",
       "label": "Y Log Offset",
       "type": "BaseInputNumber",
@@ -604,6 +642,10 @@
         ]
       },
       "col": 12
+    },
+    {
+      "type": "Divider",
+      "text": "标题与图例位置"
     },
     {
       "name": "title",
@@ -664,6 +706,10 @@
           "value": "none"
         }
       ]
+    },
+    {
+      "type": "Divider",
+      "text": "输出参数"
     },
     {
       "name": "output_name",
