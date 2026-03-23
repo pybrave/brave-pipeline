@@ -271,6 +271,8 @@ group1_color <- safe_color(normalize_color(params$group1_color), "#4DBBD5", "gro
 group2_color <- safe_color(normalize_color(params$group2_color), "#E64B35", "group2_color")
 x_label <- params$x_label %||%  "" #feature_col
 y_label <- params$y_label %||%  "" #"abundance"
+y_transform <- params$y_transform %||% "none"
+y_log_offset <- as.numeric(params$y_log_offset %||% 1e-6)
 plot_title <- params$title %||% ""
 title_size <- as.numeric(params$title_size %||% 14)
 title_position <- params$title_position %||% "left"
@@ -285,6 +287,15 @@ if (!(title_position %in% c("left", "center", "right"))) {
 }
 if (!(legend_position %in% c("top", "bottom", "left", "right", "none"))) {
 	legend_position <- "top"
+}
+if (!(y_transform %in% c("none", "log10", "log2", "ln"))) {
+	y_transform <- "none"
+}
+if (!is.finite(y_log_offset) || y_log_offset < 0) {
+	y_log_offset <- 0
+}
+if (y_transform == "none") {
+	y_log_offset <- 0
 }
 if (!is.finite(plot_width) || plot_width <= 0) {
 	plot_width <- 12
@@ -319,6 +330,18 @@ if (!(qvalue_method %in% p.adjust.methods)) {
 	qvalue_method <- "BH"
 }
 
+y_log_offset_applied <- ifelse(y_transform == "none", 0, y_log_offset)
+long_df <- long_df %>%
+	dplyr::mutate(value_plot = value + y_log_offset_applied)
+y_axis_col <- "value_plot"
+
+if (y_transform != "none") {
+	non_positive_count <- sum(!is.na(long_df[[y_axis_col]]) & long_df[[y_axis_col]] <= 0)
+	if (non_positive_count > 0) {
+		warning(sprintf("y_transform=%s 且 y_log_offset=%s 时检测到 %d 个 y+offset<=0 的值，这些点在对数坐标下将不会显示", y_transform, y_log_offset_applied, non_positive_count))
+	}
+}
+
 if (sig_mode != "exist") {
 	if (length(group1_cols) == 0 || length(group2_cols) == 0) {
 		stop("sig_mode 非 exist 时，group1_vars 与 group2_vars 需要至少各选择一列")
@@ -346,7 +369,7 @@ x_text_hjust <- ifelse(abs(x_text_angle) < 1e-8, 0.5, 1)
 
 x_var <- feature_col
 
-base_plot <- ggplot(long_df, aes(x = .data[[x_var]], y = value, color = treatment, fill = treatment))
+base_plot <- ggplot(long_df, aes(x = .data[[x_var]], y = .data[[y_axis_col]], color = treatment, fill = treatment))
 
 plot_obj <- switch(
 	plot_type,
@@ -520,18 +543,18 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 		if (!is.null(panel_col) && panel_col %in% colnames(data_for_plot) && panel_col %in% colnames(stats_df)) {
 			y_max <- data_for_plot %>%
 				dplyr::group_by(.data[[panel_col]]) %>%
-				dplyr::summarise(y_pos = safe_max(value) * 1.08, .groups = "drop")
+				dplyr::summarise(y_pos = safe_max(.data[[y_axis_col]]) * 1.08, .groups = "drop")
 
 			stats_df <- stats_df %>%
 				dplyr::left_join(y_max, by = panel_col)
 		} else {
 			stats_df <- stats_df %>%
-				dplyr::mutate(y_pos = safe_max(data_for_plot$value) * 1.08)
+				dplyr::mutate(y_pos = safe_max(data_for_plot[[y_axis_col]]) * 1.08)
 		}
 	} else {
 		y_max <- data_for_plot %>%
 			dplyr::group_by(dplyr::across(dplyr::all_of(join_cols))) %>%
-			dplyr::summarise(y_pos = safe_max(value) * 1.05, .groups = "drop")
+			dplyr::summarise(y_pos = safe_max(.data[[y_axis_col]]) * 1.05, .groups = "drop")
 
 		stats_df <- stats_df %>%
 			dplyr::left_join(y_max, by = join_cols)
@@ -558,7 +581,7 @@ add_common_style <- function(plot_in, title_text = "") {
 	# }
 	base_theme <-  theme_classic(base_size = 12)
 
-	plot_in +
+	plot_with_style <- plot_in +
 		scale_color_manual(
 			values = c(group1 = group1_color, group2 = group2_color, other = "#BDBDBD"),
 			breaks = c("group1", "group2", "other"),
@@ -589,6 +612,16 @@ add_common_style <- function(plot_in, title_text = "") {
 			axis.ticks = element_line(color = "#1A1A1A", linewidth = 0.45),
 			plot.title = element_text(size = title_size, face = "bold", hjust = title_hjust)
 		)
+
+	if (y_transform == "log10") {
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log10")
+	} else if (y_transform == "log2") {
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log2")
+	} else if (y_transform == "ln") {
+		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log")
+	}
+
+	plot_with_style
 }
 
 if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "split") {
@@ -723,6 +756,9 @@ info_lines <- c(
 	sprintf("- group2_color: %s", group2_color),
 	sprintf("- x_label: %s", x_label),
 	sprintf("- y_label: %s", y_label),
+	sprintf("- y_transform: %s", y_transform),
+	sprintf("- y_log_offset: %s", y_log_offset),
+	sprintf("- y_log_offset_applied: %s", y_log_offset_applied),
 	sprintf("- title: %s", plot_title),
 	sprintf("- title_size: %s", title_size),
 	sprintf("- title_position: %s", title_position),

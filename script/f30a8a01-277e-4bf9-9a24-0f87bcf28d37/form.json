@@ -463,6 +463,53 @@
       "type": "BaseInput"
     },
     {
+      "name": "y_transform",
+      "label": "Y Axis Transform",
+      "type": "BaseSelect",
+      "initialValue": "none",
+      "data": [
+        {
+          "label": "None",
+          "value": "none"
+        },
+        {
+          "label": "Log10",
+          "value": "log10"
+        },
+        {
+          "label": "Log2",
+          "value": "log2"
+        },
+        {
+          "label": "Natural Log",
+          "value": "ln"
+        }
+      ]
+    },
+    {
+      "name": "y_log_offset",
+      "label": "Y Log Offset",
+      "type": "BaseInputNumber",
+      "initialValue": 1e-06,
+      "depends": {
+        "or": [
+          {
+            "name": "y_transform",
+            "value": "log10"
+          },
+          {
+            "name": "y_transform",
+            "value": "log2"
+          },
+          {
+            "name": "y_transform",
+            "value": "ln"
+          }
+        ]
+      },
+      "col": 12
+    },
+    {
       "name": "title",
       "label": "Plot Title",
       "type": "BaseInput"
