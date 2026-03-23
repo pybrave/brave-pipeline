@@ -317,6 +317,58 @@
       "col": 12
     },
     {
+      "name": "split_width_min",
+      "label": "Split Min Width",
+      "type": "BaseInputNumber",
+      "initialValue": 6,
+      "depends": [
+        {
+          "name": "panel_type",
+          "value": "split"
+        }
+      ],
+      "col": 12
+    },
+    {
+      "name": "split_width_max",
+      "label": "Split Max Width",
+      "type": "BaseInputNumber",
+      "initialValue": 12,
+      "depends": [
+        {
+          "name": "panel_type",
+          "value": "split"
+        }
+      ],
+      "col": 12
+    },
+    {
+      "name": "split_width_base",
+      "label": "Split Width Base",
+      "type": "BaseInputNumber",
+      "initialValue": 3,
+      "depends": [
+        {
+          "name": "panel_type",
+          "value": "split"
+        }
+      ],
+      "col": 12
+    },
+    {
+      "name": "split_width_step",
+      "label": "Split Width Step Per Feature",
+      "type": "BaseInputNumber",
+      "initialValue": 0.35,
+      "depends": [
+        {
+          "name": "panel_type",
+          "value": "split"
+        }
+      ],
+      "col": 12
+    },
+    {
       "name": "x_text_angle",
       "label": "X Axis Text Angle",
       "type": "BaseInputNumber",

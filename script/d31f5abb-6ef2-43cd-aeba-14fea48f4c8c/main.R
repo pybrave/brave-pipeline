@@ -107,6 +107,22 @@ split_comma_tokens <- function(x) {
 	unique(tokens[tokens != ""])
 }
 
+split_delete_tokens <- function(x) {
+	if (is.null(x) || length(x) == 0) return(character())
+	v <- as.character(x[[1]])
+	if (is.na(v) || trimws(v) == "") return(character())
+
+	has_newline <- grepl("\\r|\\n", v)
+	if (has_newline) {
+		tokens <- unlist(strsplit(v, "\\r?\\n", perl = TRUE), use.names = FALSE)
+	} else {
+		tokens <- unlist(strsplit(v, ",", fixed = TRUE), use.names = FALSE)
+	}
+
+	tokens <- trimws(tokens)
+	unique(tokens[tokens != ""])
+}
+
 normalize_replace_mode <- function(mode, regex_from = NULL, kv_text = NULL) {
 	v <- tolower(trimws(as.character(mode %||% "")[[1]]))
 	if (v %in% c("none", "regex", "kv")) return(v)
@@ -379,8 +395,8 @@ data <- jsonlite::fromJSON(params_path, simplifyVector = FALSE)
 x_mat_raw <- read_selected_matrix(data$x_input, "x_input")
 y_mat_raw <- read_selected_matrix(data$y_input, "y_input")
 
-delete_x_features <- split_comma_tokens(data$delete_x_feature)
-delete_y_features <- split_comma_tokens(data$delete_y_feature)
+delete_x_features <- split_delete_tokens(data$delete_x_feature)
+delete_y_features <- split_delete_tokens(data$delete_y_feature)
 
 x_delete_features_found <- intersect(delete_x_features, rownames(x_mat_raw))
 y_delete_features_found <- intersect(delete_y_features, rownames(y_mat_raw))

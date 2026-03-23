@@ -74,6 +74,10 @@ safe_max <- function(x, fallback = 0) {
 	if (!is.finite(mx)) fallback else mx
 }
 
+clamp <- function(x, lower, upper) {
+	min(max(x, lower), upper)
+}
+
 compute_group_pvalue <- function(x, y, method = "t-test") {
 	x <- suppressWarnings(as.numeric(x))
 	y <- suppressWarnings(as.numeric(y))
@@ -212,6 +216,10 @@ point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
 plot_width <- as.numeric(params$plot_width %||% 12)
 plot_height <- as.numeric(params$plot_height %||% 7)
+split_width_min <- as.numeric(params$split_width_min %||% 6)
+split_width_max <- as.numeric(params$split_width_max %||% 12)
+split_width_base <- as.numeric(params$split_width_base %||% 3)
+split_width_step <- as.numeric(params$split_width_step %||% 0.35)
 x_text_angle <- as.numeric(params$x_text_angle %||% 45)
 axis_text_size <- as.numeric(params$axis_text_size %||% 10)
 axis_title_size <- as.numeric(params$axis_title_size %||% 12)
@@ -246,6 +254,23 @@ if (!is.finite(plot_width) || plot_width <= 0) {
 }
 if (!is.finite(plot_height) || plot_height <= 0) {
 	plot_height <- 7
+}
+if (!is.finite(split_width_min) || split_width_min <= 0) {
+	split_width_min <- 6
+}
+if (!is.finite(split_width_max) || split_width_max <= 0) {
+	split_width_max <- 12
+}
+if (!is.finite(split_width_base) || split_width_base < 0) {
+	split_width_base <- 3
+}
+if (!is.finite(split_width_step) || split_width_step <= 0) {
+	split_width_step <- 0.35
+}
+if (split_width_min > split_width_max) {
+	tmp <- split_width_min
+	split_width_min <- split_width_max
+	split_width_max <- tmp
 }
 if (!is.finite(x_text_angle)) {
 	x_text_angle <- 45
@@ -539,6 +564,13 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		panel_plot <- plot_obj %+% panel_data
 		panel_plot <- add_stats_layer(panel_plot, panel_data, panel_source_df)
 
+		panel_feature_n <- dplyr::n_distinct(panel_data[[feature_col]])
+		panel_plot_width <- clamp(
+			split_width_base + panel_feature_n * split_width_step,
+			split_width_min,
+			split_width_max
+		)
+
 		panel_prefix <- as.character(panel_value)
 		panel_title <- if (nzchar(plot_title)) {
 			stringr::str_c(panel_prefix, " - ", plot_title)
@@ -551,11 +583,11 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		output_base <- str_glue("{output_dir}/{output_name}_{panel_suffix}")
 		output_pdf <- str_glue("{output_base}.download.pdf")
 		output_png <- str_glue("{output_base}.png")
-		ggsave(filename = output_pdf, plot = panel_plot, width = plot_width, height = plot_height, dpi = 300)
-		ggsave(filename = output_png, plot = panel_plot, width = plot_width, height = plot_height, dpi = 100)
+		ggsave(filename = output_pdf, plot = panel_plot, width = panel_plot_width, height = plot_height, dpi = 300)
+		ggsave(filename = output_png, plot = panel_plot, width = panel_plot_width, height = plot_height, dpi = 100)
 		plot_outputs <- c(plot_outputs, output_pdf, output_png)
-		message(sprintf("Plot saved to: %s", output_pdf))
-		message(sprintf("Plot saved to: %s", output_png))
+		message(sprintf("Plot saved to: %s (width=%.2f, feature_n=%d)", output_pdf, panel_plot_width, panel_feature_n))
+		message(sprintf("Plot saved to: %s (width=%.2f, feature_n=%d)", output_png, panel_plot_width, panel_feature_n))
 	}
 } else {
 	if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "free_x" && panel_type!="none") {
@@ -630,6 +662,10 @@ info_lines <- c(
 	sprintf("- point_alpha: %s", point_alpha),
 	sprintf("- plot_width: %s", plot_width),
 	sprintf("- plot_height: %s", plot_height),
+	sprintf("- split_width_min: %s", split_width_min),
+	sprintf("- split_width_max: %s", split_width_max),
+	sprintf("- split_width_base: %s", split_width_base),
+	sprintf("- split_width_step: %s", split_width_step),
 	sprintf("- x_text_angle: %s", x_text_angle),
 	sprintf("- axis_text_size: %s", axis_text_size),
 	sprintf("- axis_title_size: %s", axis_title_size),
