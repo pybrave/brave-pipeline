@@ -160,7 +160,7 @@
       "name": "mediation_method",
       "label": "mediation effect method",
       "type": "BaseSelect",
-      "initialValue": "current",
+      "initialValue": "mediation_pkg",
       "data": [
         {
           "label": "Current (Sobel)",

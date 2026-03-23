@@ -354,7 +354,7 @@ fit_one_mediation_current <- function(x_vec, m_vec, y_vec) {
 	)
 }
 
-fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
+fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims = 1000L) {
 	df <- tibble::tibble(
 		X = as.numeric(x_vec),
 		M = as.numeric(m_vec),
@@ -364,7 +364,7 @@ fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
 
 	if (nrow(df) < 8) return(NULL)
 	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
-
+  message(str_glue("{} vs {}",x_name,y_name ))
 	# model_a <- stats::lm(M ~ X, data = df)
 	model_a <- glm(M ~ X, data = df, family ="gaussian")
 	model_b <- glm(Y ~ X + M, data = df, family = "binomial")
@@ -405,7 +405,7 @@ fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
 		a_effect = a,
 		a_p = as.numeric(sum_a["X", "Pr(>|t|)"]),
 		b_effect = b,
-		b_p = as.numeric(sum_b["M", "Pr(>|t|)"]),
+		b_p = as.numeric(sum_b["M", "Pr(>|z|)"]),
 		direct_effect = direct,
 		direct_p = direct_p,
 		total_effect = total,
@@ -417,9 +417,9 @@ fit_one_mediation_package <- function(x_vec, m_vec, y_vec, sims = 1000L) {
 	)
 }
 
-fit_one_mediation <- function(x_vec, m_vec, y_vec, method = "current", sims = 1000L) {
+fit_one_mediation <- function(x_name, y_name, x_vec, m_vec, y_vec, method = "current", sims = 1000L) {
 	if (identical(method, "mediation_pkg")) {
-		return(fit_one_mediation_package(x_vec, m_vec, y_vec, sims = sims))
+		return(fit_one_mediation_package(x_name, y_name, x_vec, m_vec, y_vec, sims = sims))
 	}
 	fit_one_mediation_current(x_vec, m_vec, y_vec)
 }
@@ -753,7 +753,7 @@ calc_for_one_x <- function(i) {
 		y_name <- rownames(y_aligned)[[j]]
 		y_vec <- as.numeric(y_aligned[j, ])
 
-		fit <- fit_one_mediation(x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims)
+		fit <- fit_one_mediation(x_name, y_name,  x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims)
 		if (!is.null(fit)) {
 			one_x_results[[local_idx]] <- fit %>%
 				dplyr::mutate(
