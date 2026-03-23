@@ -322,6 +322,12 @@ output_name <- params$output_name %||% "boxplot"
 output_dir <- "output"
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 plot_outputs <- character()
+plot_export_info <- tibble::tibble(
+	path = character(),
+	width = numeric(),
+	height = numeric(),
+	dpi = numeric()
+)
 
 if (!(title_position %in% c("left", "center", "right"))) {
 	title_position <- "left"
@@ -731,8 +737,13 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 		ggsave(filename = output_pdf, plot = panel_plot, width = panel_plot_width, height = plot_height, dpi = 300)
 		ggsave(filename = output_png, plot = panel_plot, width = panel_plot_width, height = plot_height, dpi = 100)
 		plot_outputs <- c(plot_outputs, output_pdf, output_png)
-		message(sprintf("Plot saved to: %s (width=%.2f, feature_n=%d)", output_pdf, panel_plot_width, panel_feature_n))
-		message(sprintf("Plot saved to: %s (width=%.2f, feature_n=%d)", output_png, panel_plot_width, panel_feature_n))
+		plot_export_info <- dplyr::bind_rows(
+			plot_export_info,
+			tibble::tibble(path = output_pdf, width = panel_plot_width, height = plot_height, dpi = 300),
+			tibble::tibble(path = output_png, width = panel_plot_width, height = plot_height, dpi = 100)
+		)
+		message(sprintf("Plot saved to: %s (width=%.2f, height=%.2f, feature_n=%d)", output_pdf, panel_plot_width, plot_height, panel_feature_n))
+		message(sprintf("Plot saved to: %s (width=%.2f, height=%.2f, feature_n=%d)", output_png, panel_plot_width, plot_height, panel_feature_n))
 	}
 } else {
 	if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "free_x" && panel_type!="none") {
@@ -748,8 +759,13 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	ggsave(filename = output_pdf, plot = plot_obj, width = plot_width, height = plot_height, dpi = 300)
 	ggsave(filename = output_png, plot = plot_obj, width = plot_width, height = plot_height, dpi = 100)
 	plot_outputs <- c(plot_outputs, output_pdf, output_png)
-	message(sprintf("Plot saved to: %s", output_pdf))
-	message(sprintf("Plot saved to: %s", output_png))
+	plot_export_info <- dplyr::bind_rows(
+		plot_export_info,
+		tibble::tibble(path = output_pdf, width = plot_width, height = plot_height, dpi = 300),
+		tibble::tibble(path = output_png, width = plot_width, height = plot_height, dpi = 100)
+	)
+	message(sprintf("Plot saved to: %s (width=%.2f, height=%.2f)", output_pdf, plot_width, plot_height))
+	message(sprintf("Plot saved to: %s (width=%.2f, height=%.2f)", output_png, plot_width, plot_height))
 }
 
 long_tsv_path <- file.path(output_dir, str_glue("{output_name}.long.tsv"))
@@ -777,6 +793,23 @@ p_valid_count <- sum(!is.na(stats_df$P_value))
 q_valid_count <- sum(!is.na(stats_df$Qvalue))
 p_lt_0_05_count <- sum(!is.na(stats_df$P_value) & stats_df$P_value < 0.05)
 q_lt_0_05_count <- sum(!is.na(stats_df$Qvalue) & stats_df$Qvalue < 0.05)
+
+plot_size_lines <- character()
+if (nrow(plot_export_info) > 0) {
+	plot_size_lines <- c(
+		"",
+		"## Output Plot Sizes",
+		vapply(seq_len(nrow(plot_export_info)), function(i) {
+			sprintf(
+				"- %s: width=%.2f, height=%.2f, dpi=%s",
+				plot_export_info$path[[i]],
+				plot_export_info$width[[i]],
+				plot_export_info$height[[i]],
+				as.character(plot_export_info$dpi[[i]])
+			)
+		}, character(1))
+	)
+}
 
 info_lines <- c(
 	"# Plot Output Report",
@@ -864,7 +897,8 @@ info_lines <- c(
 	sprintf("- p_value_valid_count: %d", p_valid_count),
 	sprintf("- q_value_valid_count: %d", q_valid_count),
 	sprintf("- p_value_lt_0.05_count: %d", p_lt_0_05_count),
-	sprintf("- q_value_lt_0.05_count: %d", q_lt_0_05_count)
+	sprintf("- q_value_lt_0.05_count: %d", q_lt_0_05_count),
+	plot_size_lines
 )
 
 readr::write_lines(info_lines, file.path(output_dir, "output.md"))
