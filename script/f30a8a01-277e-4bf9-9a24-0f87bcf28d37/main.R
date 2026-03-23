@@ -78,6 +78,15 @@ clamp <- function(x, lower, upper) {
 	min(max(x, lower), upper)
 }
 
+to_bool <- function(x, default = FALSE) {
+	if (is.null(x) || length(x) == 0) return(default)
+	if (is.logical(x)) return(isTRUE(x[[1]]))
+	v <- tolower(as.character(x[[1]]))
+	if (v %in% c("true", "1", "yes", "y", "on")) return(TRUE)
+	if (v %in% c("false", "0", "no", "n", "off")) return(FALSE)
+	default
+}
+
 compute_group_pvalue <- function(x, y, method = "t-test") {
 	x <- suppressWarnings(as.numeric(x))
 	y <- suppressWarnings(as.numeric(y))
@@ -140,6 +149,30 @@ significance_to_star <- function(x) {
 		x < 0.05 ~ "*",
 		TRUE ~ "ns"
 	)
+}
+
+format_stat_value <- function(x, digits_option = "3") {
+	x <- as.numeric(x)
+	digits_option <- as.character(digits_option[[1]])
+
+	if (tolower(digits_option) == "none") {
+		out <- as.character(x)
+		out[is.na(x)] <- "NA"
+		return(out)
+	}
+
+	digits_num <- suppressWarnings(as.integer(digits_option))
+	if (!is.finite(digits_num) || digits_num < 0) {
+		digits_num <- 3L
+	}
+
+	fmt <- sprintf("%%.%df", digits_num)
+	out <- rep("NA", length(x))
+	valid_idx <- which(!is.na(x))
+	if (length(valid_idx) > 0) {
+		out[valid_idx] <- sprintf(fmt, x[valid_idx])
+	}
+	out
 }
 
 sanitize_filename <- function(x) {
@@ -248,7 +281,11 @@ qvalue_method <- as.character(params$qvalue_method %||% "BH")
 show_stats <- params$show_stats %||% FALSE
 stat_label <- params$stat_label %||% "p"
 stat_display <- params$stat_display %||% "value"
+stat_value_digits <- as.character(params$stat_value_digits %||% "3")
 stat_position <- params$stat_position %||% "group_top"
+stat_text_size <- as.numeric(params$stat_text_size %||% 3)
+stat_offset_ratio <- as.numeric(params$stat_offset_ratio %||% 0)
+stat_bold <- to_bool(params$stat_bold, FALSE)
 point_size <- as.numeric(params$point_size %||% 1.5)
 point_alpha <- as.numeric(params$point_alpha %||% 0.7)
 plot_width <- as.numeric(params$plot_width %||% 12)
@@ -326,8 +363,24 @@ if (!is.finite(x_text_angle)) {
 if (!(sig_mode %in% c("exist", "t-test", "wilcox"))) {
 	sig_mode <- "exist"
 }
+if (tolower(stat_value_digits) != "none") {
+	stat_value_digits_num <- suppressWarnings(as.integer(stat_value_digits))
+	if (!is.finite(stat_value_digits_num) || stat_value_digits_num < 0 || stat_value_digits_num > 8) {
+		stat_value_digits <- "3"
+	} else {
+		stat_value_digits <- as.character(stat_value_digits_num)
+	}
+} else {
+	stat_value_digits <- "none"
+}
 if (!(qvalue_method %in% p.adjust.methods)) {
 	qvalue_method <- "BH"
+}
+if (!is.finite(stat_text_size) || stat_text_size <= 0) {
+	stat_text_size <- 3
+}
+if (!is.finite(stat_offset_ratio)) {
+	stat_offset_ratio <- 0
 }
 
 y_log_offset_applied <- ifelse(y_transform == "none", 0, y_log_offset)
@@ -523,17 +576,17 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 			stats_df <- stats_df %>%
 				dplyr::mutate(
 					stat_text = dplyr::case_when(
-						stat_label == "p" ~ sprintf("p=%.3g", .data[[p_col]]),
-						stat_label == "q" ~ sprintf("q=%.3g", .data[[q_col]]),
-						TRUE ~ sprintf("p=%.3g\nq=%.3g", .data[[p_col]], .data[[q_col]])
+						stat_label == "p" ~ sprintf("p=%s", format_stat_value(.data[[p_col]], stat_value_digits)),
+						stat_label == "q" ~ sprintf("q=%s", format_stat_value(.data[[q_col]], stat_value_digits)),
+						TRUE ~ sprintf("p=%s\nq=%s", format_stat_value(.data[[p_col]], stat_value_digits), format_stat_value(.data[[q_col]], stat_value_digits))
 					)
 				)
 		} else if (p_col %in% colnames(stats_df)) {
 			stats_df <- stats_df %>%
-				dplyr::mutate(stat_text = sprintf("p=%.3g", .data[[p_col]]))
+				dplyr::mutate(stat_text = sprintf("p=%s", format_stat_value(.data[[p_col]], stat_value_digits)))
 		} else if (q_col %in% colnames(stats_df)) {
 			stats_df <- stats_df %>%
-				dplyr::mutate(stat_text = sprintf("q=%.3g", .data[[q_col]]))
+				dplyr::mutate(stat_text = sprintf("q=%s", format_stat_value(.data[[q_col]], stat_value_digits)))
 		} else {
 			return(plot_in)
 		}
@@ -560,12 +613,22 @@ add_stats_layer <- function(plot_in, data_for_plot, source_df) {
 			dplyr::left_join(y_max, by = join_cols)
 	}
 
+	y_min_value <- suppressWarnings(min(data_for_plot[[y_axis_col]], na.rm = TRUE))
+	y_max_value <- safe_max(data_for_plot[[y_axis_col]])
+	y_span <- y_max_value - y_min_value
+	if (!is.finite(y_span) || y_span <= 0) {
+		y_span <- ifelse(is.finite(y_max_value) && y_max_value != 0, abs(y_max_value), 1)
+	}
+	stats_df <- stats_df %>%
+		dplyr::mutate(y_pos = y_pos + stat_offset_ratio * y_span)
+
 	plot_in +
 		geom_text(
 			data = stats_df,
 			aes(x = .data[[feature_col]], y = y_pos, label = stat_text),
 			inherit.aes = FALSE,
-			size = 3,
+			size = stat_text_size,
+			fontface = ifelse(isTRUE(stat_bold), "bold", "plain"),
 			# angle = 90,
 			vjust = -0.2
 		)
@@ -733,7 +796,11 @@ info_lines <- c(
 	sprintf("- show_stats: %s", show_stats),
 	sprintf("- stat_label: %s", stat_label),
 	sprintf("- stat_display: %s", stat_display),
+	sprintf("- stat_value_digits: %s", stat_value_digits),
 	sprintf("- stat_position: %s", stat_position),
+	sprintf("- stat_text_size: %s", stat_text_size),
+	sprintf("- stat_offset_ratio: %s", stat_offset_ratio),
+	sprintf("- stat_bold: %s", stat_bold),
 	sprintf("- point_size: %s", point_size),
 	sprintf("- point_alpha: %s", point_alpha),
 	sprintf("- plot_width: %s", plot_width),

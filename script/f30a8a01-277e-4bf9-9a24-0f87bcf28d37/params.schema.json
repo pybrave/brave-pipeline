@@ -33,6 +33,13 @@
       "type": "string",
       "enum": ["p", "q", "both"]
     },
+    "stat_value_digits": {
+      "type": "string",
+      "enum": ["none", "0", "1", "2", "3", "4", "5", "6", "7", "8"]
+    },
+    "stat_text_size": { "type": "number", "exclusiveMinimum": 0 },
+    "stat_offset_ratio": { "type": "number" },
+    "stat_bold": { "type": "boolean" },
     "point_size": { "type": "number", "minimum": 0 },
     "point_alpha": { "type": "number", "minimum": 0, "maximum": 1 },
     "group1_color": { "type": "string", "minLength": 1 },
