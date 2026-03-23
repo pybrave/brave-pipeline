@@ -389,14 +389,27 @@ if (!is.finite(stat_offset_ratio)) {
 
 y_log_offset_applied <- ifelse(y_transform == "none", 0, y_log_offset)
 long_df <- long_df %>%
-	dplyr::mutate(value_plot = value + y_log_offset_applied)
+	dplyr::mutate(
+		value_with_offset = suppressWarnings(as.numeric(value)) + y_log_offset_applied,
+		value_plot = dplyr::case_when(
+			y_transform == "log10" ~ ifelse(value_with_offset > 0, log10(value_with_offset), NA_real_),
+			y_transform == "log2" ~ ifelse(value_with_offset > 0, log2(value_with_offset), NA_real_),
+			y_transform == "ln" ~ ifelse(value_with_offset > 0, log(value_with_offset), NA_real_),
+			TRUE ~ value_with_offset
+		)
+	)
 y_axis_col <- "value_plot"
 
 if (y_transform != "none") {
-	non_positive_count <- sum(!is.na(long_df[[y_axis_col]]) & long_df[[y_axis_col]] <= 0)
+	non_positive_count <- sum(!is.na(long_df$value_with_offset) & long_df$value_with_offset <= 0)
 	if (non_positive_count > 0) {
-		warning(sprintf("y_transform=%s 且 y_log_offset=%s 时检测到 %d 个 y+offset<=0 的值，这些点在对数坐标下将不会显示", y_transform, y_log_offset_applied, non_positive_count))
+		warning(sprintf("y_transform=%s 且 y_log_offset=%s 时检测到 %d 个 y+offset<=0 的值，这些点在数据变换后将被置为 NA", y_transform, y_log_offset_applied, non_positive_count))
 	}
+}
+
+if (y_axis_digits == "2") {
+	long_df <- long_df %>%
+		dplyr::mutate(value_plot = round(value_plot, 2))
 }
 
 if (sig_mode != "exist") {
@@ -680,22 +693,6 @@ add_common_style <- function(plot_in, title_text = "") {
 			plot.title = element_text(size = title_size, face = "bold", hjust = title_hjust)
 		)
 
-	y_axis_labels <- if (y_axis_digits == "2") {
-		scales::label_number(accuracy = 0.01, trim = TRUE)
-	} else {
-		waiver()
-	}
-
-	if (y_transform == "log10") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log10", labels = y_axis_labels)
-	} else if (y_transform == "log2") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log2", labels = y_axis_labels)
-	} else if (y_transform == "ln") {
-		plot_with_style <- plot_with_style + scale_y_continuous(trans = "log", labels = y_axis_labels)
-	} else if (y_axis_digits == "2") {
-		plot_with_style <- plot_with_style + scale_y_continuous(labels = y_axis_labels)
-	}
-
 	plot_with_style
 }
 
@@ -752,6 +749,10 @@ if (!is.null(panel_col) && panel_col %in% colnames(long_df) && panel_type == "sp
 	message(sprintf("Plot saved to: %s", output_png))
 }
 
+long_tsv_path <- file.path(output_dir, str_glue("{output_name}.long.tsv"))
+readr::write_tsv(long_df, long_tsv_path)
+message(sprintf("Long table saved to: %s", long_tsv_path))
+
 stats_df <- df
 if (!("P_value" %in% colnames(stats_df))) stats_df$P_value <- NA_real_
 if (!("Qvalue" %in% colnames(stats_df))) stats_df$Qvalue <- NA_real_
@@ -780,6 +781,7 @@ info_lines <- c(
 	"## Run Info",
 	sprintf("- run_time: %s", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
 	sprintf("- params_path: %s", "params.json"),
+	sprintf("- output_long_tsv: %s", long_tsv_path),
 	# sprintf("- input_file: %s", file_path),
 	# sprintf("- output_dir: %s", output_dir),
 	# sprintf("- output_plots: %s", format_vector_for_info(plot_outputs)),
