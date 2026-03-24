@@ -1,0 +1,66 @@
+{
+  "input_files": [
+    {
+      "id": 7003,
+      "analysis_result_id": "876db940-c790-493d-bfb5-fd12e0a5bc7c",
+      "sample_id": null,
+      "file_name": "代谢物_CM_SM_v2.xlsx",
+      "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+      "file_type": "collected",
+      "content": "/opt/brave_prod/workspace/data/3ab6cf0a-d53d-4637-a039-ea347e0d435f/代谢物_CM_SM_v2.tsv",
+      "file": 7003,
+      "feature_var": "MS2 name",
+      "sample_vars": [
+        "CM135ce",
+        "CM172ce",
+        "CM173ce",
+        "CM175ce",
+        "CM177ce",
+        "CM179ce",
+        "SM162ce",
+        "SM163ce",
+        "SM165ce",
+        "SM166ce",
+        "SM169ce",
+        "SM170ce"
+      ]
+    },
+    {
+      "id": 6999,
+      "analysis_result_id": "0ad6746e-2eb8-4362-ae2c-38fe74905e22",
+      "sample_id": null,
+      "file_name": "代谢物_CS_CM",
+      "component_id": "75087620-2ff8-4045-8694-a0c19aac12fc",
+      "file_type": "collected",
+      "content": "/opt/brave_prod/workspace/analysis/3ab6cf0a-d53d-4637-a039-ea347e0d435f/99ffdb15-fa10-4a31-a12f-34e8d7656789/b12aac19-4dab-4504-ac09-dd9bfe0b38b6/output/代谢物_CS_CM.tsv",
+      "file": 6999,
+      "feature_var": "MS2 name",
+      "sample_vars": [
+        "CS132ce",
+        "CS133ce",
+        "CS141ce",
+        "CS143ce",
+        "CS145ce",
+        "CM135ce",
+        "CM172ce",
+        "CM173ce",
+        "CM175ce",
+        "CM177ce",
+        "CM179ce"
+      ]
+    }
+  ],
+  "colors": {
+    "input_files": "-"
+  },
+  "groups_name": {
+    "input_files": "-"
+  },
+  "re_groups_name": {
+    "input_files": "-"
+  },
+  "groups": [
+    "input_files"
+  ],
+  "pipeline_dir": "/opt/brave_prod/workspace/pipeline"
+}

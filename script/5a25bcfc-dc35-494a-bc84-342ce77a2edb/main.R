@@ -361,14 +361,20 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 		Y = as.numeric(y_vec)
 	) %>%
 		dplyr::filter(stats::complete.cases(.))
-
+	message(str_glue("{x_name} vs {y_name} start" ))
+	abc <<- df
+	
 	if (nrow(df) < 8) return(NULL)
 	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
-  message(str_glue("{} vs {}",x_name,y_name ))
 	# model_a <- stats::lm(M ~ X, data = df)
 	model_a <- glm(M ~ X, data = df, family ="gaussian")
 	model_b <- glm(Y ~ X + M, data = df, family = "binomial")
-	model_t <- stats::lm(Y ~ X, data = df)
+	model_t <- glm(Y ~ X, data = df)
+	# 在 mediate 调用前插入
+	# print("Model A Summary:")
+	# print(summary(model_a))
+	# print("Model B Summary:")
+	# print(summary(model_b))
 
 	med_obj <- mediation::mediate(
 		model.m = model_a,
@@ -376,9 +382,10 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 		treat = "X",
 		mediator = "M",
 		sims = sims,
-		boot = FALSE
+		boot = TRUE
 	)
-
+	message(str_glue("{x_name} vs {y_name} end" ))
+	
 	sum_a <- summary(model_a)$coefficients
 	sum_b <- summary(model_b)$coefficients
 	sum_t <- summary(model_t)$coefficients
@@ -399,7 +406,7 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 	total <- as.numeric(med_obj$tau.coef %||% c_total)
 	total_p <- as.numeric(med_obj$tau.p %||% as.numeric(sum_t["X", "Pr(>|t|)"]))
 	prop_mediated <- as.numeric(med_obj$n.avg %||% med_obj$n0 %||% ifelse(total == 0, NA_real_, indirect / total))
-
+	
 	tibble::tibble(
 		n = nrow(df),
 		a_effect = a,
@@ -683,7 +690,13 @@ if (length(common_samples) == 0) {
 x_aligned <- x_mat[, common_samples, drop = FALSE]
 y_aligned <- y_mat[, common_samples, drop = FALSE]
 group_aligned <- group_vec[common_samples]
-
+if(F){
+  # Bacteroidetes vs PC(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/P-18:1(11Z))
+  x_vec <- x_aligned["Firmicutes",]
+  y_vec <- y_aligned["PC(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/P-18:1(11Z))",]
+  m_vec <- group_aligned
+  fit_one_mediation_package("aa", "bb", x_vec, m_vec, y_vec, sims = 1000)
+}
 group_levels <- sort(unique(group_aligned))
 if (!identical(group_levels, c(0, 1))) {
 	stop(sprintf("分组编码异常，期望包含 control=0 和 treatment=1，实际为: %s", paste(group_levels, collapse = ", ")))
