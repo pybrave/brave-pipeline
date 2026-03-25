@@ -738,6 +738,7 @@ y_output <- file.path(output_dir, "y_aligned.tsv")
 # group_output <- file.path(output_dir, "group_aligned.tsv")
 mediation_input_output <- file.path(output_dir, "mediation_input.tsv")
 mediation_output <- file.path(output_dir, "mediation_all.tsv")
+prop_mediated_output <- file.path(output_dir, "prop_mediated_heatmap.tsv")
 top_output <- file.path(output_dir, "mediation_top.tsv")
 sankey_output <- file.path(output_dir, "mediation_sankey.pdf")
 triangle_output <- file.path(output_dir, "mediation_triangle.pdf")
@@ -835,6 +836,18 @@ mediation_df <- dplyr::bind_rows(result_list) %>%
 
 readr::write_tsv(mediation_df, mediation_output)
 
+prop_mediated_df <- mediation_df %>%
+	dplyr::select(x_feature, y_feature, prop_mediated) %>%
+	dplyr::group_by(x_feature, y_feature) %>%
+	dplyr::summarise(
+		prop_mediated = if (all(is.na(prop_mediated))) NA_real_ else mean(prop_mediated, na.rm = TRUE),
+		.groups = "drop"
+	) %>%
+	tidyr::pivot_wider(names_from = y_feature, values_from = prop_mediated) %>%
+	dplyr::arrange(x_feature)
+
+readr::write_tsv(prop_mediated_df, prop_mediated_output)
+
 # top_df <- mediation_df %>%
 # 	dplyr::slice_head(n = min(30, nrow(mediation_df)))
 # # readr::write_tsv(top_df, top_output)
@@ -904,6 +917,7 @@ info_lines <- c(
 	# sprintf("- group_aligned_file: %s", group_output),
 	# sprintf("- mediation_input_file: %s", mediation_input_output),
 	sprintf("- mediation_all_file: %s", mediation_output),
+	sprintf("- prop_mediated_heatmap_file: %s", prop_mediated_output),
 	# sprintf("- mediation_top_file: %s", top_output),
 	# sprintf("- mediation_sankey_file: %s", ifelse(sankey_ok, sankey_output, "none")),
 	# sprintf("- mediation_triangle_file: %s", triangle_output),

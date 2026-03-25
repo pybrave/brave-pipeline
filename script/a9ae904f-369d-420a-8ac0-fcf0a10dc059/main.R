@@ -211,12 +211,17 @@ cluster_cols <- params$`__heatmap_cluster_cols`
 show_rownames <- params$`__heatmap_show_rownames`
 show_colnames <- params$`__heatmap_show_colnames`
 heatmap_title <- params$`__heatmap_title`
+heatmap_star_size <- params$`__heatmap_star_size`
+if (is.null(heatmap_star_size) || length(heatmap_star_size) == 0 || is.na(heatmap_star_size)) {
+  heatmap_star_size <- 10
+}
 max_abs <- max(abs(corr_matrix), na.rm = TRUE)
 
 breaks <- seq(-max_abs, max_abs, length.out = 101)
 
-adj_sig_matrix <- ifelse(p_adj_matrix < 0.01, "**",
-                     ifelse(p_adj_matrix < 0.05, "*", ""))
+adj_sig_matrix <- ifelse(is.na(p_adj_matrix), "***",
+      ifelse(p_adj_matrix < 0.01, "**",
+        ifelse(p_adj_matrix < 0.05, "*", "")))
 pdf(file = str_glue("output/heatmap_fdr.pdf") , width =heatmap_width,height =heatmap_height)
 pheatmap(
   corr_matrix ,
@@ -227,7 +232,7 @@ pheatmap(
   cluster_cols = cluster_cols,
   show_rownames = show_rownames,
   show_colnames = show_colnames,
-  fontsize_number = 10,
+  fontsize_number = heatmap_star_size,
   fontsize = 12,
   main = heatmap_title,
   border_color = NA
@@ -237,8 +242,9 @@ dev.off()
 
 
 
-sig_matrix <- ifelse(p_matrix < 0.01, "**",
-                         ifelse(p_matrix < 0.05, "*", ""))
+sig_matrix <- ifelse(is.na(p_matrix), "***",
+      ifelse(p_matrix < 0.01, "**",
+        ifelse(p_matrix < 0.05, "*", "")))
 pdf(file = str_glue("output/heatmap.pdf") , width =heatmap_width,height =heatmap_height)
 pheatmap(
   corr_matrix ,
@@ -249,7 +255,7 @@ pheatmap(
   cluster_cols = cluster_cols,
   show_rownames = show_rownames,
   show_colnames = show_colnames,
-  fontsize_number = 10,
+  fontsize_number = heatmap_star_size,
   fontsize = 12,
   main = heatmap_title,
   border_color = NA
