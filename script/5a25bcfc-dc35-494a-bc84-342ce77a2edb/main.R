@@ -354,6 +354,20 @@ fit_one_mediation_current <- function(x_vec, m_vec, y_vec) {
 	)
 }
 
+pick_pvalue_column <- function(coef_mat) {
+	if (is.null(dim(coef_mat)) || ncol(coef_mat) == 0) return(NULL)
+	p_cols <- grep("^Pr\\(>\\|[tz]\\|\\)$", colnames(coef_mat), perl = TRUE)
+	if (length(p_cols) == 0) return(NULL)
+	colnames(coef_mat)[p_cols[[1]]]
+}
+
+coef_pvalue <- function(coef_mat, term) {
+	if (!(term %in% rownames(coef_mat))) return(NA_real_)
+	p_col <- pick_pvalue_column(coef_mat)
+	if (is.null(p_col) || !(p_col %in% colnames(coef_mat))) return(NA_real_)
+	as.numeric(coef_mat[term, p_col])
+}
+
 fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims = 1000L) {
 	df <- tibble::tibble(
 		X = as.numeric(x_vec),
@@ -361,8 +375,6 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 		Y = as.numeric(y_vec)
 	) %>%
 		dplyr::filter(stats::complete.cases(.))
-	message(str_glue("{x_name} vs {y_name} start" ))
-	abc <<- df
 	
 	if (nrow(df) < 8) return(NULL)
 	if (stats::sd(df$X) == 0 || stats::sd(df$M) == 0 || stats::sd(df$Y) == 0) return(NULL)
@@ -376,15 +388,20 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 	# print("Model B Summary:")
 	# print(summary(model_b))
 
-	med_obj <- mediation::mediate(
-		model.m = model_a,
-		model.y = model_b,
-		treat = "X",
-		mediator = "M",
-		sims = sims,
-		boot = TRUE
+	med_obj <- tryCatch(
+		mediation::mediate(
+			model.m = model_a,
+			model.y = model_b,
+			treat = "X",
+			mediator = "M",
+			sims = sims,
+			boot = TRUE
+		),
+		error = function(e) {
+			warning(sprintf("mediate failed for x=%s, y=%s: %s", x_name, y_name, conditionMessage(e)))
+			NULL
+		}
 	)
-	message(str_glue("{x_name} vs {y_name} end" ))
 	
 	sum_a <- summary(model_a)$coefficients
 	sum_b <- summary(model_b)$coefficients
@@ -399,20 +416,20 @@ fit_one_mediation_package <- function(x_name, y_name, x_vec, m_vec, y_vec, sims 
 	c_prime <- as.numeric(sum_b["X", "Estimate"])
 	c_total <- as.numeric(sum_t["X", "Estimate"])
 
-	indirect <- as.numeric(med_obj$d.avg %||% med_obj$d0 %||% NA_real_)
-	p_indirect <- as.numeric(med_obj$d.avg.p %||% med_obj$d0.p %||% NA_real_)
-	direct <- as.numeric(med_obj$z.avg %||% med_obj$z0 %||% c_prime)
-	direct_p <- as.numeric(med_obj$z.avg.p %||% med_obj$z0.p %||% as.numeric(sum_b["X", "Pr(>|t|)"]))
-	total <- as.numeric(med_obj$tau.coef %||% c_total)
-	total_p <- as.numeric(med_obj$tau.p %||% as.numeric(sum_t["X", "Pr(>|t|)"]))
-	prop_mediated <- as.numeric(med_obj$n.avg %||% med_obj$n0 %||% ifelse(total == 0, NA_real_, indirect / total))
+	indirect <- if (is.null(med_obj)) a * b else as.numeric(med_obj$d.avg %||% med_obj$d0 %||% NA_real_)
+	p_indirect <- if (is.null(med_obj)) NA_real_ else as.numeric(med_obj$d.avg.p %||% med_obj$d0.p %||% NA_real_)
+	direct <- if (is.null(med_obj)) c_prime else as.numeric(med_obj$z.avg %||% med_obj$z0 %||% c_prime)
+	direct_p <- if (is.null(med_obj)) coef_pvalue(sum_b, "X") else as.numeric(med_obj$z.avg.p %||% med_obj$z0.p %||% coef_pvalue(sum_b, "X"))
+	total <- if (is.null(med_obj)) c_total else as.numeric(med_obj$tau.coef %||% c_total)
+	total_p <- if (is.null(med_obj)) coef_pvalue(sum_t, "X") else as.numeric(med_obj$tau.p %||% coef_pvalue(sum_t, "X"))
+	prop_mediated <- if (is.null(med_obj)) ifelse(total == 0, NA_real_, indirect / total) else as.numeric(med_obj$n.avg %||% med_obj$n0 %||% ifelse(total == 0, NA_real_, indirect / total))
 	
 	tibble::tibble(
 		n = nrow(df),
 		a_effect = a,
-		a_p = as.numeric(sum_a["X", "Pr(>|t|)"]),
+		a_p = coef_pvalue(sum_a, "X"),
 		b_effect = b,
-		b_p = as.numeric(sum_b["M", "Pr(>|z|)"]),
+		b_p = coef_pvalue(sum_b, "M"),
 		direct_effect = direct,
 		direct_p = direct_p,
 		total_effect = total,
@@ -766,7 +783,13 @@ calc_for_one_x <- function(i) {
 		y_name <- rownames(y_aligned)[[j]]
 		y_vec <- as.numeric(y_aligned[j, ])
 
-		fit <- fit_one_mediation(x_name, y_name,  x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims)
+		fit <- tryCatch(
+			fit_one_mediation(x_name, y_name,  x_vec, y_vec, group_aligned, method = mediation_method, sims = mediation_sims),
+			error = function(e) {
+				warning(sprintf("fit failed for x=%s, y=%s: %s", x_name, y_name, conditionMessage(e)))
+				NULL
+			}
+		)
 		if (!is.null(fit)) {
 			one_x_results[[local_idx]] <- fit %>%
 				dplyr::mutate(
@@ -791,6 +814,13 @@ if (parallel_cores > 1L && length(x_indices) > 1L) {
 }
 
 result_list <- unlist(result_nested, recursive = FALSE, use.names = FALSE)
+valid_result_mask <- vapply(result_list, function(x) is.data.frame(x), logical(1))
+invalid_result_count <- sum(!valid_result_mask)
+if (invalid_result_count > 0) {
+	message(sprintf("已过滤非数据框结果: %d", invalid_result_count))
+}
+result_list <- result_list[valid_result_mask]
+
 if (length(result_list) == 0) {
 	stop(sprintf("没有可用的中介模型结果（可能是缺失值过多或变量方差为 0）"))
 }
