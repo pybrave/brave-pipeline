@@ -85,6 +85,20 @@
       ]
     },
     {
+      "type": "BaseInputNumber",
+      "name": "__heatmap_fontsize",
+      "label": "Heatmap Font Size",
+      "initialValue": 12,
+      "min": 1,
+      "step": 1,
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
       "type": "BaseSelect",
       "name": "numeric_missing",
       "label": "Numeric Variables Missing",

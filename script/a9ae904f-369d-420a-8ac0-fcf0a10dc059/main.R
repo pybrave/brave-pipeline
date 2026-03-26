@@ -11,10 +11,30 @@ library(readxl)
 library(patchwork)
 library(Hmisc)  # rcorr 用于相关性+p值
 library(showtext)
+library(ragg)      # 1. 加载 ragg
+# library(showtext)
+# showtext_auto()   # 确保启用 showtext
+# font_add(family = "Arial", regular = matches$path[1])
 
+# library(systemfonts)
+# /usr/share/fonts/truetype/msttcorefonts
+# systemfonts::match_fonts("") 
+matches <- systemfonts::match_fonts("Arial")
+font_family <- "sans"
+if (nrow(matches) > 0 && !is.na(matches$path[1]) && nzchar(matches$path[1])) {
+  arial_registered <- tryCatch({
+    sysfonts::font_add(family = "Arial", regular = matches$path[1])
+    TRUE
+  }, error = function(e) FALSE)
+  if (arial_registered) {
+    font_family <- "Arial"
+  }
+}
 showtext_auto()
-
-
+readr::write_lines(str_glue("Final font family: {font_family}"), "output.md")
+library(extrafont)
+# font_import()
+loadfonts()
 params <- fromJSON("params.json")
 
 # 
@@ -203,6 +223,7 @@ write_tsv(as.data.frame(p_adj_matrix)|> rownames_to_column("name"),file = "outpu
 # "__heatmap_cluster_cols": true,
 # "__heatmap_show_rownames": true,
 # "__heatmap_show_colnames": true,
+# "__heatmap_fontsize": 12,
 
 heatmap_width <- params$`__heatmap_width`
 heatmap_height <- params$`__heatmap_height`
@@ -214,6 +235,7 @@ heatmap_title <- params$`__heatmap_title`
 heatmap_star_size <- params$`__heatmap_star_size`
 heatmap_fontsize_col <- params$`__heatmap_fontsize_col`
 heatmap_fontsize_row <- params$`__heatmap_fontsize_row`
+heatmap_fontsize <- params$`__heatmap_fontsize`
 if (is.null(heatmap_star_size) || length(heatmap_star_size) == 0 || is.na(heatmap_star_size)) {
   heatmap_star_size <- 10
 }
@@ -223,6 +245,9 @@ if (is.null(heatmap_fontsize_col) || length(heatmap_fontsize_col) == 0 || is.na(
 if (is.null(heatmap_fontsize_row) || length(heatmap_fontsize_row) == 0 || is.na(heatmap_fontsize_row)) {
   heatmap_fontsize_row <- 12
 }
+if (is.null(heatmap_fontsize) || length(heatmap_fontsize) == 0 || is.na(heatmap_fontsize)) {
+  heatmap_fontsize <- 12
+}
 max_abs <- max(abs(corr_matrix), na.rm = TRUE)
 
 breaks <- seq(-max_abs, max_abs, length.out = 101)
@@ -230,7 +255,7 @@ breaks <- seq(-max_abs, max_abs, length.out = 101)
 adj_sig_matrix <- ifelse(is.na(p_adj_matrix), "***",
       ifelse(p_adj_matrix < 0.01, "**",
         ifelse(p_adj_matrix < 0.05, "*", "")))
-pdf(file = str_glue("output/heatmap_fdr.pdf") , width =heatmap_width,height =heatmap_height)
+pdf(file = str_glue("output/heatmap_fdr.pdf") , width =heatmap_width,height =heatmap_height, family = font_family)
 pheatmap(
   corr_matrix ,
   display_numbers = adj_sig_matrix,
@@ -243,19 +268,40 @@ pheatmap(
   fontsize_row = heatmap_fontsize_row,
   fontsize_col = heatmap_fontsize_col,
   fontsize_number = heatmap_star_size,
-  fontsize = 12,
+  fontsize = heatmap_fontsize,
   main = heatmap_title,
-  border_color = NA
+  border_color = NA,
+  family = "Arial"
 )
 dev.off()
 
+# agg_png(file=str_glue("output/heatmap_fdr0.png"), width = heatmap_width, height = heatmap_height,units="cm", res = 300)
+# 
+# pheatmap(
+#   corr_matrix ,
+#   display_numbers = adj_sig_matrix,
+#   color = colorRampPalette(c("#9BBBE1", "#FFFFFF", "#F09BA0"))(100),
+#   breaks = breaks,
+#   cluster_rows = cluster_rows,
+#   cluster_cols = cluster_cols,
+#   show_rownames = show_rownames,
+#   show_colnames = show_colnames,
+#   fontsize_row = heatmap_fontsize_row,
+#   fontsize_col = heatmap_fontsize_col,
+#   fontsize_number = heatmap_star_size,
+#   fontsize = 12,
+#   main = heatmap_title,
+#   border_color = NA,
+#   family = "Arial"
+# )
+# dev.off()
 
 
 
 sig_matrix <- ifelse(is.na(p_matrix), "***",
       ifelse(p_matrix < 0.01, "**",
         ifelse(p_matrix < 0.05, "*", "")))
-pdf(file = str_glue("output/heatmap.pdf") , width =heatmap_width,height =heatmap_height)
+pdf(file = str_glue("output/heatmap.pdf") , width =heatmap_width,height =heatmap_height, family = "Arial")
 pheatmap(
   corr_matrix ,
   display_numbers = sig_matrix,
@@ -268,9 +314,10 @@ pheatmap(
   fontsize_row = heatmap_fontsize_row,
   fontsize_col = heatmap_fontsize_col,
   fontsize_number = heatmap_star_size,
-  fontsize = 12,
+  fontsize = heatmap_fontsize,
   main = heatmap_title,
-  border_color = NA
+  border_color = NA,
+  family = "Arial"
 )
 dev.off()
 
