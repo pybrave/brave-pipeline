@@ -212,8 +212,16 @@ show_rownames <- params$`__heatmap_show_rownames`
 show_colnames <- params$`__heatmap_show_colnames`
 heatmap_title <- params$`__heatmap_title`
 heatmap_star_size <- params$`__heatmap_star_size`
+heatmap_fontsize_col <- params$`__heatmap_fontsize_col`
+heatmap_fontsize_row <- params$`__heatmap_fontsize_row`
 if (is.null(heatmap_star_size) || length(heatmap_star_size) == 0 || is.na(heatmap_star_size)) {
   heatmap_star_size <- 10
+}
+if (is.null(heatmap_fontsize_col) || length(heatmap_fontsize_col) == 0 || is.na(heatmap_fontsize_col)) {
+  heatmap_fontsize_col <- 12
+}
+if (is.null(heatmap_fontsize_row) || length(heatmap_fontsize_row) == 0 || is.na(heatmap_fontsize_row)) {
+  heatmap_fontsize_row <- 12
 }
 max_abs <- max(abs(corr_matrix), na.rm = TRUE)
 
@@ -232,6 +240,8 @@ pheatmap(
   cluster_cols = cluster_cols,
   show_rownames = show_rownames,
   show_colnames = show_colnames,
+  fontsize_row = heatmap_fontsize_row,
+  fontsize_col = heatmap_fontsize_col,
   fontsize_number = heatmap_star_size,
   fontsize = 12,
   main = heatmap_title,
@@ -255,6 +265,8 @@ pheatmap(
   cluster_cols = cluster_cols,
   show_rownames = show_rownames,
   show_colnames = show_colnames,
+  fontsize_row = heatmap_fontsize_row,
+  fontsize_col = heatmap_fontsize_col,
   fontsize_number = heatmap_star_size,
   fontsize = 12,
   main = heatmap_title,

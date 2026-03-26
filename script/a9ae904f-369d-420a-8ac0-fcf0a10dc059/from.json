@@ -57,6 +57,34 @@
       ]
     },
     {
+      "type": "BaseInputNumber",
+      "name": "__heatmap_fontsize_col",
+      "label": "Heatmap X-axis Font Size",
+      "initialValue": 12,
+      "min": 1,
+      "step": 1,
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
+      "type": "BaseInputNumber",
+      "name": "__heatmap_fontsize_row",
+      "label": "Heatmap Y-axis Font Size",
+      "initialValue": 12,
+      "min": 1,
+      "step": 1,
+      "rules": [
+        {
+          "required": true,
+          "message": "This field cannot be empty!"
+        }
+      ]
+    },
+    {
       "type": "BaseSelect",
       "name": "numeric_missing",
       "label": "Numeric Variables Missing",
