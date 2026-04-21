@@ -1,0 +1,99 @@
+{
+    "formJson": [
+        {
+            "name": "group_field",
+            "label": "Group Field",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "This field cannot be empty!"
+                }
+            ],
+            "type": "GroupFieldSelect"
+        },
+        {
+            "name": "reads",
+            "label": "reads",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ],
+            "type": "GroupSelectSampleButton",
+            "component_id": "fdc5fe2a-fd4e-4acc-aab1-a7bcbe6d8119",
+            "group": "group_field",
+            "db": true
+        },
+        {
+            "name": "input_fastq1",
+            "label": "Read 1 FASTQ",
+            "type": "BaseInput",
+            "required": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "Please specify the Read 1 FASTQ file path"
+                }
+            ]
+        },
+        {
+            "name": "input_fastq2",
+            "label": "Read 2 FASTQ",
+            "type": "BaseInput",
+            "required": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "Please specify the Read 2 FASTQ file path"
+                }
+            ]
+        },
+        {
+            "name": "output_sam",
+            "label": "Output SAM File Name",
+            "type": "BaseInput",
+            "initialValue": "aligned.sam",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "Output SAM file name is required"
+                }
+            ]
+        },
+        {
+            "name": "threads",
+            "label": "Number of Threads",
+            "type": "BaseInputNumber",
+            "initialValue": 4,
+            "min": 1,
+            "max": 64
+        },
+        {
+            "name": "mem_limit_gb",
+            "label": "Memory Limit (GB)",
+            "type": "BaseInputNumber",
+            "initialValue": 8,
+            "min": 2,
+            "max": 128
+        },
+        {
+            "name": "aligner_options",
+            "label": "BWA Aligner Options",
+            "type": "BaseInput",
+            "initialValue": "-k 2 -w 100 -d 100 -r 1 -c 0 -D 0.5 -B 1 -O 1 -E 1 -L 20"
+        },
+        {
+            "name": "output_name",
+            "label": "Output File Prefix",
+            "type": "BaseInput",
+            "initialValue": "bwa_alignment",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "Output prefix is required"
+                }
+            ]
+        }
+    ]
+}

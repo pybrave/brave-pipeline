@@ -1,0 +1,41 @@
+{
+    "inputs": [
+        {
+            "name": "fastq1",
+            "type": "file",
+            "required": true
+        },
+        {
+            "name": "fastq2",
+            "type": "file",
+            "required": true
+        },
+        {
+            "name": "index",
+            "type": "file",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "bam",
+            "type": "file",
+            "pattern": "{sample}_trimmed.bam"
+        }
+    ],
+    "params": {
+        "minlen": {
+            "type": "number",
+            "default": 30
+        }
+    },
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB",
+        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "green"
+    }
+}

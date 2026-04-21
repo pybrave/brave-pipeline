@@ -1,0 +1,29 @@
+{
+    "gather": {
+        "field": "bam",
+        "mode": "list"
+    },
+    "inputs": [
+        {
+            "name": "bam",
+            "type": "file"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "trimmed_bam",
+            "type": "file",
+            "pattern": "all.vcf"
+        }
+    ],
+    "params": [],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB",
+        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "lime"
+    }
+}

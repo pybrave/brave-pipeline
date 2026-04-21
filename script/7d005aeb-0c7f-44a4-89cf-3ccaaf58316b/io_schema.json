@@ -1,0 +1,35 @@
+{
+    "scatter": {
+        "field": "reads",
+        "mode": "each"
+    },
+    "inputs": [
+        {
+            "type": "file",
+            "name": "fastq1",
+            "required": true
+        },
+        {
+            "type": "file",
+            "name": "fastq2",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "html",
+            "type": "file",
+            "multiple": false,
+            "required": true
+        }
+    ],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB",
+        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "magenta"
+    }
+}
