@@ -97,21 +97,53 @@ med.out <- mediate(model.m, model.y,
 
 summary(med.out) 
 
+extract_path_stats <- function(model, term) {
+  coef_table <- summary(model)$coefficients
+  if (!(term %in% rownames(coef_table))) {
+    return(list(estimate = NA_real_, ci = c(NA_real_, NA_real_), p_value = NA_real_))
+  }
+
+  p_col <- grep("^Pr\\(", colnames(coef_table), value = TRUE)[1]
+  estimate <- unname(coef_table[term, "Estimate"])
+  p_value <- if (!is.na(p_col)) unname(coef_table[term, p_col]) else NA_real_
+
+  ci <- tryCatch(
+    stats::confint.default(model, parm = term),
+    error = function(e) c(NA_real_, NA_real_)
+  )
+  if (is.matrix(ci)) {
+    ci <- ci[1, ]
+  }
+
+  list(estimate = estimate, ci = as.numeric(ci), p_value = p_value)
+}
+
+a_path <- extract_path_stats(model.m, "X")
+b_path <- extract_path_stats(model.y, "M")
+
 med_df <- data.frame(
-  Effect = c("ACME", "ADE", "Total Effect", "Proportion Mediated"),
-  Estimate = c(med.out$d0,
+  Effect = c("a path (X->M)", "b path (M->Y)", "ACME", "ADE", "Total Effect", "Proportion Mediated"),
+  Estimate = c(a_path$estimate,
+               b_path$estimate,
+               med.out$d0,
                med.out$z0,
                med.out$tau.coef,
                med.out$n0),
-  CI.Lower = c(med.out$d0.ci[1],
+  CI.Lower = c(a_path$ci[1],
+               b_path$ci[1],
+               med.out$d0.ci[1],
                med.out$z0.ci[1],
                med.out$tau.ci[1],
                med.out$n0.ci[1]),
-  CI.Upper = c(med.out$d0.ci[2],
+  CI.Upper = c(a_path$ci[2],
+               b_path$ci[2],
+               med.out$d0.ci[2],
                med.out$z0.ci[2],
                med.out$tau.ci[2],
                med.out$n0.ci[2]),
-  p.value = c(med.out$d0.p,
+  p.value = c(a_path$p_value,
+              b_path$p_value,
+              med.out$d0.p,
               med.out$z0.p,
               med.out$tau.p,
               NA)  # 中介比例没有 p 值
