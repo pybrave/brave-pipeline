@@ -1,4 +1,6 @@
 library(tidyverse)
+library(car)
+
 params <- jsonlite::fromJSON("params.json")
 
 
@@ -178,6 +180,9 @@ logistic_formula <- as.formula(str_glue( "{outcome_backticked}  ~ {vars_backtick
 
 model <- glm(logistic_formula, data = df_1, family = family)
 
+vif_values <- vif(model) 
+as.data.frame(vif_values) |> rownames_to_column("feature") |>
+  write_tsv(file = str_glue("output/variance_inflation_factors.tsv"))
 
 
 OR <- exp(coef(model))

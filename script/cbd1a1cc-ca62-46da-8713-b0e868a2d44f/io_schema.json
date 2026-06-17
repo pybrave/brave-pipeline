@@ -2,33 +2,46 @@
     "inputs": [
         {
             "name": "fastq1",
-            "type": "file",
+            "type": "BaseInput",
             "required": true
         },
         {
             "name": "fastq2",
-            "type": "file",
+            "type": "BaseInput",
             "required": true
         },
         {
             "name": "index",
-            "type": "file",
+            "type": "BaseInput",
             "required": true
         }
     ],
     "outputs": [
         {
             "name": "bam",
-            "type": "file",
-            "pattern": "{sample}_trimmed.bam"
+            "type": "file"
         }
     ],
-    "params": {
-        "minlen": {
-            "type": "number",
-            "default": 30
+    "params": [
+        {
+            "name": "aligner_options",
+            "label": "BWA Aligner Options",
+            "type": "BaseInput",
+            "initialValue": "-k 2 -w 100 -d 100 -r 1 -c 0 -D 0.5 -B 1 -O 1 -E 1 -L 20"
+        },
+        {
+            "name": "output_name",
+            "label": "Output File Prefix",
+            "type": "BaseInput",
+            "initialValue": "bwa_alignment",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "Output prefix is required"
+                }
+            ]
         }
-    },
+    ],
     "resources": {
         "cpu": 4,
         "memory": "6GB",

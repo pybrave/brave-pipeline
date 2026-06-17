@@ -1,0 +1,83 @@
+{
+    "scatter": {
+        "field": "reads",
+        "mode": "each1"
+    },
+    "inputs": [
+        {
+            "label": "Bed File",
+            "name": "bed",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Bim File",
+            "name": "bim",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Fam File",
+            "name": "fam",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        }
+    ],
+    "workflow": [
+        {
+            "name": "reads",
+            "label": "worklow reads",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ],
+            "type": "GroupSelectSampleButton",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "group": "group_field",
+            "db": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "eigenval",
+            "type": "file"
+        },
+        {
+            "name": "eigenvec",
+            "type": "file"
+        }
+    ],
+    "params": [],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB",
+        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "magenta"
+    }
+}

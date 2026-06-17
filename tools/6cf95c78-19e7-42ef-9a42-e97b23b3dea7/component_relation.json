@@ -1,0 +1,47 @@
+{
+    "name": "富集分析基因",
+    "img": null,
+    "tags": null,
+    "url": "https://github.com/pybrave/enrichment-analysis-from-gene",
+    "category": "default",
+    "description": null,
+    "prompt": null,
+    "dag_definition": {
+        "nodes": [
+            {
+                "script_id": "e6b62165-4cbe-4df1-a7eb-c0113a3ba45e",
+                "position": {
+                    "x": 155,
+                    "y": 23
+                }
+            },
+            {
+                "script_id": "20c07876-4dfa-49e6-8108-a4beaee6bb62",
+                "position": {
+                    "x": -98,
+                    "y": -81
+                }
+            }
+        ],
+        "edges": [
+            {
+                "source": "20c07876-4dfa-49e6-8108-a4beaee6bb62",
+                "sourceHandle": "kegg_enrich_rds",
+                "target": "e6b62165-4cbe-4df1-a7eb-c0113a3ba45e",
+                "targetHandle": "rds",
+                "id": "xy-edge__20c07876-4dfa-49e6-8108-a4beaee6bb62kegg_enrich_rds-e6b62165-4cbe-4df1-a7eb-c0113a3ba45erds"
+            }
+        ]
+    },
+    "relation_id": "6cf95c78-19e7-42ef-9a42-e97b23b3dea7",
+    "relation_type": "tools",
+    "install_key": null,
+    "component_id": null,
+    "container_id": "07252ea9-8d3e-45f1-9438-e7ec58acfa7e",
+    "parent_component_id": null,
+    "input_component_ids": null,
+    "output_component_ids": null,
+    "order_index": 25,
+    "version": "v0.0.1",
+    "update_info": null
+}

@@ -1,0 +1,32 @@
+{
+    "name": "Seurat",
+    "img": null,
+    "tags": null,
+    "url": "https://github.com/gobravedev/seurat.git",
+    "category": "default",
+    "description": null,
+    "prompt": null,
+    "dag_definition": {
+        "nodes": [
+            {
+                "script_id": "cb10eae3-81b8-4e83-acb1-dd9a2604ca71",
+                "position": {
+                    "x": -14.5,
+                    "y": -4.5
+                }
+            }
+        ],
+        "edges": []
+    },
+    "relation_id": "3738ea3d-bfb5-4116-9ba8-4cf9a57918d3",
+    "relation_type": "tools",
+    "install_key": null,
+    "component_id": null,
+    "container_id": "e7083d4d-53ec-4de6-a2f2-debd2021ae43",
+    "parent_component_id": null,
+    "input_component_ids": null,
+    "output_component_ids": null,
+    "order_index": 26,
+    "version": "v0.0.2",
+    "update_info": null
+}

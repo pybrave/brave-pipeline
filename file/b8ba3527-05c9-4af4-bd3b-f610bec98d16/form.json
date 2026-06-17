@@ -1,0 +1,49 @@
+{
+    "name": "raw_reads",
+    "mode": "multiple",
+    "type": "GroupSelectSampleButton",
+    "label": "Raw Reads",
+    "group": "group_field",
+    "rules": [
+        {
+            "required": true,
+            "message": "This field cannot be empty!"
+        }
+    ],
+    "dir": "",
+    "fileFormat": {
+        "profile": "*.tsv"
+    },
+    "inputForm": [
+        {
+            "name": [
+                "content",
+                "fastq1"
+            ],
+            "initialValue": "/data/wangyang/NGS_TEST/*_1.fastq.gz",
+            "label": "fastq1",
+            "type": "BaseInput",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "This field cannot be empty!"
+                }
+            ]
+        },
+        {
+            "name": [
+                "content",
+                "fastq2"
+            ],
+            "initialValue": "/data/wangyang/NGS_TEST/*_2.fastq.gz",
+            "label": "fastq2",
+            "type": "BaseInput",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "This field cannot be empty!"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,24 @@
+{
+    "formJson": [
+        {
+            "type": "BaseSelect",
+            "name": "numeric_missing",
+            "label": "Numeric Variables Missing",
+            "initialValue": "median",
+            "data": [
+                {
+                    "label": "Median imputation",
+                    "value": "median"
+                },
+                {
+                    "label": "Mean imputation",
+                    "value": "mean"
+                },
+                {
+                    "label": "Complete case",
+                    "value": "complete_case"
+                }
+            ]
+        }
+    ]
+}

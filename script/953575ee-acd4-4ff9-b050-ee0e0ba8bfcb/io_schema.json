@@ -2,11 +2,31 @@
     "inputs": [
         {
             "name": "deg",
-            "type": "file",
+            "label": "Input",
+            "type": "BaseInput",
             "required": true
         }
     ],
-    "outputs": [],
+    "outputs": [
+        {
+            "name": "gene_id_mapping",
+            "type": "file",
+            "pattern": "gene_id_mapping.tsv",
+            "required": true
+        },
+        {
+            "name": "kegg_enrichment",
+            "type": "file",
+            "pattern": "kegg_enrichment.tsv",
+            "required": true
+        },
+        {
+            "name": "kegg_enrich_rds",
+            "type": "file",
+            "pattern": "kegg_enrich.rds",
+            "required": true
+        }
+    ],
     "params": [],
     "resources": {
         "cpu": 4,

@@ -1,0 +1,99 @@
+{
+    "scatter": {
+        "field": "reads",
+        "mode": "each1"
+    },
+    "inputs": [
+        {
+            "label": "Ped File",
+            "name": "ped",
+            "type": "SelectSample",
+            "input_type": "file",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Map File",
+            "name": "map",
+            "type": "SelectSample",
+            "input_type": "file",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Keep File",
+            "name": "keep",
+            "type": "SelectSample",
+            "input_type": "file",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "db": true
+        }
+    ],
+    "workflow": [
+        {
+            "name": "reads",
+            "label": "worklow reads",
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ],
+            "type": "GroupSelectSampleButton",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "group": "group_field",
+            "db": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "bed",
+            "type": "file"
+        },
+        {
+            "name": "bim",
+            "type": "file"
+        },
+        {
+            "name": "fam",
+            "type": "file"
+        }
+    ],
+    "params": [],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB",
+        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "magenta"
+    }
+}

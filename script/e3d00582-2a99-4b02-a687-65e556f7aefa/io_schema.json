@@ -6,14 +6,13 @@
     "inputs": [
         {
             "name": "bam",
-            "type": "file"
+            "type": "BaseInput"
         }
     ],
     "outputs": [
         {
-            "name": "trimmed_bam",
-            "type": "file",
-            "pattern": "all.vcf"
+            "name": "vcf",
+            "type": "file"
         }
     ],
     "params": [],

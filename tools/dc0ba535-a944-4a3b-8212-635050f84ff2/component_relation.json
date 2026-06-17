@@ -1,0 +1,103 @@
+{
+    "name": "GWAS",
+    "img": null,
+    "tags": null,
+    "url": "https://github.com/gobravedev/GWAS.git",
+    "category": "default",
+    "description": null,
+    "prompt": null,
+    "dag_definition": {
+        "nodes": [
+            {
+                "script_id": "05fa094c-7121-48c8-a05e-122f7d71f12d",
+                "scatter": {
+                    "field": "reads",
+                    "mode": "each1"
+                },
+                "position": {
+                    "x": -250,
+                    "y": -117.5
+                }
+            },
+            {
+                "script_id": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "scatter": {
+                    "field": "reads",
+                    "mode": "each1"
+                },
+                "position": {
+                    "x": -17,
+                    "y": -90
+                }
+            },
+            {
+                "script_id": "08ea83bd-c5bc-4d05-9acf-49b8ad1e3aca",
+                "scatter": {
+                    "field": "reads",
+                    "mode": "each1"
+                },
+                "position": {
+                    "x": 200.5,
+                    "y": -102.5
+                }
+            }
+        ],
+        "edges": [
+            {
+                "source": "05fa094c-7121-48c8-a05e-122f7d71f12d",
+                "sourceHandle": "bed",
+                "target": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "targetHandle": "bed",
+                "id": "xy-edge__05fa094c-7121-48c8-a05e-122f7d71f12dbed-c570b4cd-5f8f-4547-801b-bf4069a85fa7bed"
+            },
+            {
+                "source": "05fa094c-7121-48c8-a05e-122f7d71f12d",
+                "sourceHandle": "bim",
+                "target": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "targetHandle": "bim",
+                "id": "xy-edge__05fa094c-7121-48c8-a05e-122f7d71f12dbim-c570b4cd-5f8f-4547-801b-bf4069a85fa7bim"
+            },
+            {
+                "source": "05fa094c-7121-48c8-a05e-122f7d71f12d",
+                "sourceHandle": "fam",
+                "target": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "targetHandle": "fam",
+                "id": "xy-edge__05fa094c-7121-48c8-a05e-122f7d71f12dfam-c570b4cd-5f8f-4547-801b-bf4069a85fa7fam"
+            },
+            {
+                "source": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "sourceHandle": "bed",
+                "target": "08ea83bd-c5bc-4d05-9acf-49b8ad1e3aca",
+                "targetHandle": "bed",
+                "id": "xy-edge__c570b4cd-5f8f-4547-801b-bf4069a85fa7bed-08ea83bd-c5bc-4d05-9acf-49b8ad1e3acabed"
+            },
+            {
+                "source": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "sourceHandle": "bim",
+                "target": "08ea83bd-c5bc-4d05-9acf-49b8ad1e3aca",
+                "targetHandle": "bim",
+                "id": "xy-edge__c570b4cd-5f8f-4547-801b-bf4069a85fa7bim-08ea83bd-c5bc-4d05-9acf-49b8ad1e3acabim"
+            },
+            {
+                "source": "c570b4cd-5f8f-4547-801b-bf4069a85fa7",
+                "sourceHandle": "fam",
+                "target": "08ea83bd-c5bc-4d05-9acf-49b8ad1e3aca",
+                "targetHandle": "fam",
+                "id": "xy-edge__c570b4cd-5f8f-4547-801b-bf4069a85fa7fam-08ea83bd-c5bc-4d05-9acf-49b8ad1e3acafam"
+            }
+        ]
+    },
+    "relation_id": "dc0ba535-a944-4a3b-8212-635050f84ff2",
+    "relation_type": "tools",
+    "install_key": null,
+    "component_id": null,
+    "container_id": "f81fb78f-f029-4132-bcd9-fabc11f14eb7",
+    "parent_component_id": null,
+    "input_component_ids": [
+        "b8ba3527-05c9-4af4-bd3b-f610bec98d16"
+    ],
+    "output_component_ids": null,
+    "order_index": 27,
+    "version": "v0.0.1",
+    "update_info": null
+}

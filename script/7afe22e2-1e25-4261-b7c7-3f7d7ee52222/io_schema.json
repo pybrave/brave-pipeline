@@ -16,7 +16,7 @@
     "outputs": [
         {
             "name": "index",
-            "pattern": "{sample}_trimmed.index"
+            "type": "file"
         }
     ],
     "resources": {
@@ -26,6 +26,6 @@
     },
     "ui": {
         "icon": "scissors",
-        "color": "magenta"
+        "color": "green"
     }
 }

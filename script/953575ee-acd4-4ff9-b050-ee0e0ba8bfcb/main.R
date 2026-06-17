@@ -1,6 +1,11 @@
 library(tidyverse)
 library(jsonlite)
 library(clusterProfiler)
+library(KEGGREST)
+
+# 2: In readChar(con, 5L, useBytes = TRUE) :
+#   cannot open compressed file '//.local/share/clusterProfiler/kegg_category.rda', probable reason 'No such file or directory'
+# Output saved to: output
 
 `%||%` <- function(x, y) {
   if (is.null(x) || length(x) == 0) y else x
@@ -37,6 +42,14 @@ normalize_gene_id_type <- function(x) {
   }
   value
 }
+install_if_missing <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+      install.packages("BiocManager")
+    }
+    BiocManager::install(pkg, ask = FALSE, update = FALSE)
+  }
+}
 
 get_orgdb_package <- function(species) {
   species_pkg <- c(
@@ -70,15 +83,17 @@ convert_symbol_to_entrez <- function(symbol_ids, species) {
   }
 
   if (!requireNamespace("AnnotationDbi", quietly = TRUE) || !requireNamespace(org_pkg, quietly = TRUE)) {
-    return(list(
-      ids = character(),
-      table = tibble(feature = input_ids, entrezid = NA_character_),
-      status = "orgdb_missing",
-      package = org_pkg,
-      input_count = length(input_ids),
-      mapped_count = 0,
-      unmapped_count = length(input_ids)
-    ))
+    # return(list(
+    #   ids = character(),
+    #   table = tibble(feature = input_ids, entrezid = NA_character_),
+    #   status = "orgdb_missing",
+    #   package = org_pkg,
+    #   input_count = length(input_ids),
+    #   mapped_count = 0,
+    #   unmapped_count = length(input_ids)
+    # ))
+    install_if_missing(org_pkg)
+    
   }
 
   orgdb <- getExportedValue(org_pkg, org_pkg)
@@ -139,6 +154,9 @@ run_kegg_enrichment <- function(gene_ids, species, candidates = c("ncbi-geneid",
       ),
       error = function(e) NULL
     )
+    org_pkg <- get_orgdb_package(species)
+    res <- setReadable(res, OrgDb = org_pkg, keyType="ENTREZID")
+    
 
     if (!is.null(res) && nrow(as.data.frame(res)) > 0) {
       return(list(result = res, key_type = key_type))
@@ -196,6 +214,13 @@ conversion_mapped_count <- length(feature_list)
 conversion_unmapped_count <- 0
 
 id_map_table <- tibble(feature = feature_list, entrezid = NA_character_)
+# https://rest.kegg.jp/link/mmu/pathway
+# https://rest.kegg.jp/list/pathway/mmu
+
+# https://rest.kegg.jp/conv/ncbi-geneid/mmu
+# R convert entrez to kegg: mmu:100000029
+
+
 
 enrich_candidates <- c("ncbi-geneid", "kegg", "uniprot")
 ids_for_enrich <- feature_list
@@ -218,8 +243,30 @@ if (gene_id_type == "symbol") {
   enrich_candidates <- c("uniprot")
 }
 
+kegg_id <- keggConv(species, "ncbi-geneid")
+kegg_df <- tibble::tibble(
+  ncbi_geneid = sub("ncbi-geneid:", "", names(kegg_id)),
+  kegg_id = unname(kegg_id)
+)
+# add kegg id to mapping table if possible
+if (nrow(id_map_table) > 0 && "entrezid" %in% colnames(id_map_table)) {
+  filter_deg_fc <- filter_deg |>
+    select(feature,logfc = log2FoldChange   )
+  id_map_table <- id_map_table |>
+    dplyr::left_join(kegg_df, by = c("entrezid" = "ncbi_geneid")) |>
+    dplyr::left_join(filter_deg_fc, by="feature")
+  
+  id_map_table  <- id_map_table |> na.omit()
+}
+
 if (nrow(enrich_df) == 0 && length(ids_for_enrich) > 0) {
   enrich_run <- run_kegg_enrichment(ids_for_enrich, species, candidates = enrich_candidates)
+  saveRDS(enrich_run$result, file = "output/kegg_enrich.rds")
+  # barplot_p <- barplot(enrich_run$result, showCategory=20)
+  # ggsave(str_glue("output/barplot.png"),barplot_p,  width = 10, height = 7,units = "in")
+  # ggsave(str_glue("output/barplot.download.pdf"),barplot_p,  width = 10, height = 7,units = "in")
+  # 
+  
   used_key_type <- enrich_run$key_type
 
   if (!is.null(enrich_run$result)) {
@@ -232,35 +279,38 @@ if (nrow(enrich_df) == 0 && length(ids_for_enrich) > 0) {
   }
 }
 
+
+
+
 readr::write_tsv(id_map_table, id_map_file)
 
 readr::write_tsv(enrich_df, enrich_file)
 
-if (nrow(enrich_df) > 0) {
-  plot_df <- enrich_df |>
-    dplyr::slice_head(n = top_n) |>
-    dplyr::mutate(Description = forcats::fct_reorder(Description, Log10Padjust))
-
-  p <- ggplot(plot_df, aes(x = Description, y = Log10Padjust, fill = GeneRatioNumeric)) +
-    geom_col(width = 0.75) +
-    coord_flip() +
-    scale_fill_gradient(low = "#9ecae1", high = "#08519c", na.value = "#bdbdbd") +
-    labs(
-      title = sprintf("KEGG enrichment (%s)", species),
-      x = "Pathway",
-      y = "-log10(adjusted p-value)",
-      fill = "Gene ratio"
-    ) +
-    theme_bw(base_size = 12) +
-    theme(
-      plot.title = element_text(hjust = 0.5),
-      axis.text.y = element_text(size = 9),
-      legend.position = "right"
-    )
-
-  ggsave(plot_file, p, width = 10, height = 7)
-  plot_status <- "generated"
-}
+# if (nrow(enrich_df) > 0) {
+#   plot_df <- enrich_df |>
+#     dplyr::slice_head(n = top_n) |>
+#     dplyr::mutate(Description = forcats::fct_reorder(Description, Log10Padjust))
+# 
+#   p <- ggplot(plot_df, aes(x = Description, y = Log10Padjust, fill = GeneRatioNumeric)) +
+#     geom_col(width = 0.75) +
+#     coord_flip() +
+#     scale_fill_gradient(low = "#9ecae1", high = "#08519c", na.value = "#bdbdbd") +
+#     labs(
+#       title = sprintf("KEGG enrichment (%s)", species),
+#       x = "Pathway",
+#       y = "-log10(adjusted p-value)",
+#       fill = "Gene ratio"
+#     ) +
+#     theme_bw(base_size = 12) +
+#     theme(
+#       plot.title = element_text(hjust = 0.5),
+#       axis.text.y = element_text(size = 9),
+#       legend.position = "right"
+#     )
+# 
+#   ggsave(plot_file, p, width = 10, height = 7)
+#   plot_status <- "generated"
+# }
 
 info_lines <- c(
   "# Analysis Output",

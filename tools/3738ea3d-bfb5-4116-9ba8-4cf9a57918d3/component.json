@@ -1,0 +1,24 @@
+[
+    {
+        "component_id": "cb10eae3-81b8-4e83-acb1-dd9a2604ca71",
+        "install_key": null,
+        "component_type": "script",
+        "component_name": "Seurat",
+        "description": null,
+        "component_ids": null,
+        "img": null,
+        "container_id": "4815ed58-4949-41f9-a845-c3795eef192f",
+        "tools_container_id": null,
+        "prompt": null,
+        "io_schema": "{\r\n  \"inputs\": [\r\n    {\r\n      \"name\": \"deg\",\r\n      \"label\":\"Input\",\r\n      \"type\": \"BaseTextArea\",\r\n      \"required\": true\r\n    }\r\n  ],\r\n  \"outputs\":[\r\n    {\r\n      \"name\":\"gene_id_mapping\",\r\n      \"type\": \"file\",\r\n      \"pattern\": \"gene_id_mapping.tsv\",\r\n      \"required\": false\r\n    },{\r\n      \"name\": \"kegg_enrichment\",\r\n      \"type\": \"file\",\r\n      \"pattern\": \"kegg_enrichment.tsv\",\r\n      \"required\": true\r\n    },\r\n    {\r\n      \"name\": \"kegg_enrich_rds\",\r\n      \"type\": \"file\",\r\n      \"pattern\": \"kegg_enrich.rds\",\r\n      \"required\": true\r\n    }\r\n  ],\r\n  \"params\": [],\r\n  \"resources\": {\r\n    \"cpu\": 4,\r\n    \"memory\": \"6GB\",\r\n    \"docker\": \"quay.io/biocontainers/trim-galore:0.6.7\"\r\n  },\r\n  \"ui\": {\r\n    \"icon\": \"scissors\",\r\n    \"color\": \"magenta\"\r\n  }\r\n}",
+        "sub_container_id": null,
+        "tags": null,
+        "file_type": null,
+        "script_type": "r",
+        "category": "default",
+        "content": "{\r\n    \"formJson\": [\r\n      \r\n        {\r\n            \"name\": \"species\",\r\n            \"label\": \"species\",\r\n            \"type\": \"BaseSelect\",\r\n            \"initialValue\": \"hsa\",\r\n            \"data\": [\r\n                {\r\n                    \"label\": \"Homo sapiens (hsa)\",\r\n                    \"value\": \"hsa\"\r\n                },\r\n                {\r\n                    \"label\": \"Mus musculus (mmu)\",\r\n                    \"value\": \"mmu\"\r\n                },\r\n                {\r\n                    \"label\": \"Rattus norvegicus (rno)\",\r\n                    \"value\": \"rno\"\r\n                },\r\n                {\r\n                    \"label\": \"Danio rerio (dre)\",\r\n                    \"value\": \"dre\"\r\n                },\r\n                {\r\n                    \"label\": \"Arabidopsis thaliana (ath)\",\r\n                    \"value\": \"ath\"\r\n                },\r\n                {\r\n                    \"label\": \"Saccharomyces cerevisiae (sce)\",\r\n                    \"value\": \"sce\"\r\n                },\r\n                {\r\n                    \"label\": \"Caenorhabditis elegans (cel)\",\r\n                    \"value\": \"cel\"\r\n                },\r\n                {\r\n                    \"label\": \"Drosophila melanogaster (dme)\",\r\n                    \"value\": \"dme\"\r\n                },\r\n                {\r\n                    \"label\": \"KEGG Orthology (ko)\",\r\n                    \"value\": \"ko\"\r\n                }\r\n            ]\r\n        },\r\n        {\r\n            \"name\": \"gene_id_type\",\r\n            \"label\": \"gene id type\",\r\n            \"type\": \"BaseSelect\",\r\n            \"initialValue\": \"symbol\",\r\n            \"data\": [\r\n                {\r\n                    \"label\": \"SYMBOL (convert to ENTREZID)\",\r\n                    \"value\": \"symbol\"\r\n                },\r\n                {\r\n                    \"label\": \"ENTREZID\",\r\n                    \"value\": \"entrez\"\r\n                },\r\n                {\r\n                    \"label\": \"KEGG\",\r\n                    \"value\": \"kegg\"\r\n                },\r\n                {\r\n                    \"label\": \"UniProt\",\r\n                    \"value\": \"uniprot\"\r\n                }\r\n            ]\r\n        }\r\n    ]\r\n}",
+        "order_index": null,
+        "position": null,
+        "edges": null
+    }
+]

@@ -1,0 +1,49 @@
+{
+    "ped": {
+        "id": 7020,
+        "analysis_result_id": "52d68cf7-3501-403b-90a6-47d8dd199624",
+        "sample_id": null,
+        "file_name": "890S_GM_Out.ped",
+        "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+        "file_type": "individual",
+        "content": "/data2/brave_analysis_workspace/data/d5f8a252-2242-4419-841f-4fc81bf1bd12/890S_GM_Out.ped",
+        "form_type": "SelectSample",
+        "selcted_group_name": "-",
+        "re_groups_name": "-"
+    },
+    "map": {
+        "id": 7021,
+        "analysis_result_id": "ba1bde9d-4690-42fb-be36-e6e800697b8d",
+        "sample_id": null,
+        "file_name": "890S_GM_Out.map",
+        "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+        "file_type": "individual",
+        "content": "/data2/brave_analysis_workspace/data/d5f8a252-2242-4419-841f-4fc81bf1bd12/890S_GM_Out.map",
+        "form_type": "SelectSample",
+        "selcted_group_name": "-",
+        "re_groups_name": "-"
+    },
+    "minlen": 1,
+    "analysis_name": "890S",
+    "colors": {
+        "ped": "-",
+        "map": "-"
+    },
+    "groups_name": {
+        "ped": "-",
+        "map": "-"
+    },
+    "re_groups_name": {
+        "ped": "-",
+        "map": "-"
+    },
+    "groups": [
+        "ped",
+        "map"
+    ],
+    "pipeline_dir": "/data2/brave_analysis_workspace/pipeline",
+    "tools_output_dir": "/data2/brave_analysis_workspace/analysis/d5f8a252-2242-4419-841f-4fc81bf1bd12/809547b2-36e0-446e-aa16-93bf37d28e4f",
+    "eigenval": "/data2/brave_analysis_workspace/analysis/d5f8a252-2242-4419-841f-4fc81bf1bd12/809547b2-36e0-446e-aa16-93bf37d28e4f/node-f675a09c-8e69-4eb7-b1b2-310c5118357c/output/890S.sampleQc.snpQC.eigenval",
+    "eigenvec": "/data2/brave_analysis_workspace/analysis/d5f8a252-2242-4419-841f-4fc81bf1bd12/809547b2-36e0-446e-aa16-93bf37d28e4f/node-f675a09c-8e69-4eb7-b1b2-310c5118357c/output/890S.sampleQc.snpQC.eigenvec",
+    "output_dir": "/data2/brave_analysis_workspace/analysis/d5f8a252-2242-4419-841f-4fc81bf1bd12/809547b2-36e0-446e-aa16-93bf37d28e4f/node-8ab27d36-33ae-4d78-b041-d175efea8ec8/output"
+}
