@@ -1,0 +1,35 @@
+{
+  "seuratObject": {
+    "id": 2067536415402496000,
+    "md5": "",
+    "path": "/data2/brave_analysis_workspace/data/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/rds/25100363_GHN_2D1/GHN_2D1_seurat.rds",
+    "size": 166656366,
+    "format": "rds",
+    "storage": "LOCAL",
+    "file_name": "GHN_2D1_seurat.rds",
+    "file_type": "rds",
+    "form_type": "SelectSample",
+    "sample_id": "",
+    "description": "",
+    "component_id": "",
+    "re_groups_name": "-",
+    "analysis_result_id": "2067536415402496001",
+    "selcted_group_name": "-"
+  },
+  "analysis_name": "test",
+  "colors": {
+    "seuratObject": "-"
+  },
+  "groups_name": {
+    "seuratObject": "-"
+  },
+  "re_groups_name": {
+    "seuratObject": "-"
+  },
+  "groups": [
+    "seuratObject"
+  ],
+  "pipeline_dir": "/data2/brave_analysis_workspace/pipeline",
+  "tools_output_dir": "/opt/brave_prod/workspace/analysis/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/b923d4e4-89d0-4888-8448-d6cd1c12e801",
+  "output_dir": "/opt/brave_prod/workspace/analysis/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/b923d4e4-89d0-4888-8448-d6cd1c12e801/node-5fb3d4f7-f60c-428e-a44c-e8ece109c82a/output"
+}

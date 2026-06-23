@@ -1,7 +1,7 @@
 {
     "scatter": {
         "field": "seuratObjects",
-        "mode": "each"
+        "mode": "one"
     },
     "inputs": [
         {

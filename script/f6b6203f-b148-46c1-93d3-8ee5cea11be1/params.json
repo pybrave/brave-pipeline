@@ -1,0 +1,71 @@
+{
+  "analysis_name": "test",
+  "colors": {
+    "seuratObject": "-"
+  },
+  "groups": [
+    "seuratObject"
+  ],
+  "groups_name": {
+    "seuratObject": "-"
+  },
+  "output_dir": "/data2/brave_analysis_workspace/analysis/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/f6750ad6-4cf8-4926-a520-c4a2c3b622d4/c4f4d6a2-6400-4561-a8be-1d56b579e85b/output",
+  "pipeline_dir": "",
+  "re_groups_name": {
+    "seuratObject": "-"
+  },
+  "seuratObject": [
+    {
+      "analysis_result_id": "2067536415402496001",
+      "component_id": "",
+      "description": "",
+      "file_name": "GHN_2D1_seurat.rds",
+      "file_type": "rds",
+      "form_type": "SelectSample",
+      "format": "rds",
+      "id": "2067536415402496001",
+      "md5": "",
+      "path": "/data2/brave_analysis_workspace/data/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/rds/25100363_GHN_2D1/GHN_2D1_seurat.rds",
+      "re_groups_name": "-",
+      "sample_id": "",
+      "selcted_group_name": "-",
+      "size": 166656366,
+      "storage": "LOCAL"
+    },
+    {
+      "analysis_result_id": "2067536388051439617",
+      "component_id": "",
+      "description": "",
+      "file_name": "G2_seurat.rds",
+      "file_type": "rds",
+      "form_type": "SelectSample",
+      "format": "rds",
+      "id": "2067536388051439617",
+      "md5": "",
+      "path": "/data2/brave_analysis_workspace/data/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/rds/25100363_G2/G2_seurat.rds",
+      "re_groups_name": "-",
+      "sample_id": "",
+      "selcted_group_name": "-",
+      "size": 126345650,
+      "storage": "LOCAL"
+    },
+    {
+      "analysis_result_id": "2067536349648392193",
+      "component_id": "",
+      "description": "",
+      "file_name": "G1_seurat.rds",
+      "file_type": "rds",
+      "form_type": "SelectSample",
+      "format": "rds",
+      "id": "2067536349648392193",
+      "md5": "",
+      "path": "/data2/brave_analysis_workspace/data/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/rds/25100363_G1/G1_seurat.rds",
+      "re_groups_name": "-",
+      "sample_id": "",
+      "selcted_group_name": "-",
+      "size": 136266059,
+      "storage": "LOCAL"
+    }
+  ],
+  "tools_output_dir": "/data2/brave_analysis_workspace/analysis/7b3b510e-cf76-40bc-b3c9-cf2d3a81af34/f6750ad6-4cf8-4926-a520-c4a2c3b622d4"
+}

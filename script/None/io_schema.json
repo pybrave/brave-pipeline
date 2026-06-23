@@ -1,90 +1,38 @@
 {
-    "scatter": {
-        "field": "reads",
-        "mode": "each1"
-    },
     "inputs": [
         {
-            "label": "Bed File",
-            "name": "bed",
-            "type": "SelectSample",
-            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
-            "db": true,
-            "rules": [
-                {
-                    "required": true,
-                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
-                }
-            ]
+            "label": "input1",
+            "name": "input1",
+            "type": "BaseInput",
+            "required": true
         },
         {
-            "label": "Bim File",
-            "name": "bim",
-            "type": "SelectSample",
-            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
-            "db": true,
-            "rules": [
-                {
-                    "required": true,
-                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
-                }
-            ]
-        },
-        {
-            "label": "Fam File",
-            "name": "fam",
-            "type": "SelectSample",
-            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
-            "db": true,
-            "rules": [
-                {
-                    "required": true,
-                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
-                }
-            ]
-        }
-    ],
-    "workflow": [
-        {
-            "name": "reads",
-            "label": "worklow reads",
-            "rules": [
-                {
-                    "required": true,
-                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
-                }
-            ],
-            "type": "GroupSelectSampleButton",
-            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
-            "group": "group_field",
-            "db": true
+            "label": "input2",
+            "name": "input2",
+            "type": "BaseInput",
+            "required": true
         }
     ],
     "outputs": [
         {
-            "name": "eigenval",
-            "type": "file"
-        },
-        {
-            "name": "eigenvec",
+            "name": "bam",
             "type": "file"
         }
     ],
     "params": [
         {
-            "name": "minlen",
-            "label": "minlen",
-            "type": "BaseInputNumber",
-            "default": 30
+            "name": "params_name",
+            "label": "params_name",
+            "type": "BaseInput",
+            "initialValue": "params_value"
         }
     ],
     "resources": {
         "cpu": 4,
-        "memory": "6GB",
-        "docker": "quay.io/biocontainers/trim-galore:0.6.7"
+        "memory": "6GB"
     },
     "ui": {
         "icon": "scissors",
-        "color": "magenta"
+        "color": "green"
     }
 }

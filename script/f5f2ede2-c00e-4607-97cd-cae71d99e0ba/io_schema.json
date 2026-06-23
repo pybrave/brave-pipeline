@@ -1,0 +1,60 @@
+{
+    "inputs": [
+        {
+            "label": "Bed File",
+            "name": "bed",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Bim File",
+            "name": "bim",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "label": "Fam File",
+            "name": "fam",
+            "type": "SelectSample",
+            "component_id": "b8ba3527-05c9-4af4-bd3b-f610bec98d16",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        }
+    ],
+    "outputs": [],
+    "params": [
+        {
+            "name": "params_name",
+            "label": "params_name",
+            "type": "BaseInput",
+            "initialValue": "params_value"
+        }
+    ],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "green"
+    }
+}

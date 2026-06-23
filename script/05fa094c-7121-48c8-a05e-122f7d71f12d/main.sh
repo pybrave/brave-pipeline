@@ -5,7 +5,7 @@ cd output
 ln -s  "{{map.path}}"  {{map.file_name}}
 ln -s  "{{ped.path}}"   {{ped.file_name}}
 
-{% if keep is defined %}
+{% if keep %}
 ln -s  "{{keep.path}}"  {{keep.file_name}}
 
 /data2/brave_analysis_workspace/package/code_server/software/plink/plink \
