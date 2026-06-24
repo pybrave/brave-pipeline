@@ -1,6 +1,5 @@
 library(Seurat)
 library(jsonlite)
-options(future.globals.maxSize = 2 * 1024^3) 
 
 `%||%` <- function(x, y) {
 	if (is.null(x) || length(x) == 0 || identical(x, "")) y else x
@@ -24,6 +23,16 @@ to_bool <- function(x, default_value = FALSE) {
 	if (value %in% c("true", "1", "yes", "y", "on")) return(TRUE)
 	if (value %in% c("false", "0", "no", "n", "off")) return(FALSE)
 	default_value
+}
+
+with_future_plan <- function(expr, use_sequential = FALSE) {
+	if (!use_sequential) return(eval.parent(substitute(expr)))
+	if (!requireNamespace("future", quietly = TRUE)) return(eval.parent(substitute(expr)))
+
+	old_plan <- future::plan()
+	on.exit(future::plan(old_plan), add = TRUE)
+	future::plan(future::sequential)
+	eval.parent(substitute(expr))
 }
 
 parse_gene_list <- function(gene_text) {
@@ -61,6 +70,15 @@ extract_paths <- function(x) {
 }
 
 params <- jsonlite::fromJSON("params.json", simplifyVector = FALSE)
+
+future_globals_maxsize_gb <- to_int(params$future_globals_maxsize_gb %||% 0, 0)
+if (future_globals_maxsize_gb > 0) {
+	options(future.globals.maxSize = future_globals_maxsize_gb * 1024^3)
+} else {
+	options(future.globals.maxSize = +Inf)
+}
+
+integration_force_sequential <- to_bool(params$integration_force_sequential %||% TRUE, TRUE)
 
 output_dir <- unwrap_scalar(params$output_dir %||% params$tools_output_dir %||% "output")
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
@@ -113,18 +131,27 @@ if (length(objects) == 1) {
 } else if (integration_method == "SCT") {
 	objects <- lapply(objects, function(obj) SCTransform(obj, verbose = FALSE))
 	features <- SelectIntegrationFeatures(object.list = objects, nfeatures = nfeatures)
-	objects <- PrepSCTIntegration(object.list = objects, anchor.features = features, verbose = FALSE)
-	anchors <- FindIntegrationAnchors(
-		object.list = objects,
-		normalization.method = "SCT",
-		anchor.features = features,
-		dims = 1:npcs,
-		k.anchor = k_anchor
+	objects <- with_future_plan(
+		PrepSCTIntegration(object.list = objects, anchor.features = features, verbose = FALSE),
+		use_sequential = integration_force_sequential
 	)
-	integrated <- IntegrateData(
-		anchorset = anchors,
-		normalization.method = "SCT",
-		dims = 1:npcs
+	anchors <- with_future_plan(
+		FindIntegrationAnchors(
+			object.list = objects,
+			normalization.method = "SCT",
+			anchor.features = features,
+			dims = 1:npcs,
+			k.anchor = k_anchor
+		),
+		use_sequential = integration_force_sequential
+	)
+	integrated <- with_future_plan(
+		IntegrateData(
+			anchorset = anchors,
+			normalization.method = "SCT",
+			dims = 1:npcs
+		),
+		use_sequential = integration_force_sequential
 	)
 	DefaultAssay(integrated) <- "integrated"
 	integrated <- RunPCA(integrated, npcs = npcs, verbose = FALSE)
