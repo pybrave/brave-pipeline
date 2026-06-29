@@ -22,7 +22,72 @@ params.json 是根据用户输入 io_schema.json 生成的表单生成的，文�
             "initialValue":0.02,
             "tooltip":"missing individual data"
 }
+{
+            "name": "normalize_method",
+            "label": "normalize_method",
+            "type": "BaseSelect",
+            "initialValue": "lognormalize",
+            "data": [
+                {
+                    "label": "lognormalize",
+                    "value": "lognormalize"
+                },
+                {
+                    "label": "rc",
+                    "value": "rc"
+                }
+            ],
+            "tooltip": "Normalization method for NormalizeData"
+}
 ```
 其中type的类型包括：BaseSelect,BaseSwitch,BaseInput,BaseInputNumber,BaseTextAreaNum
+
+目前也可以支持depends，用于表单项的条件显示或隐藏,参考如下,当method="lasso"时才显示alpha_en
+```
+  {
+      "type": "BaseSelect",
+      "name": "method",
+      "label": "Method",
+      "initialValue":"lasso",
+      "required": true,
+      "rules": [
+        {
+          "required": true
+        }
+      ],
+      "data": [
+        {
+          "label": "lasso",
+          "value": "lasso"
+        },
+        {
+          "label": "ridge",
+          "value": "ridge"
+        },
+        {
+          "label": "elasticnet",
+          "value": "elasticnet"
+        }
+      ]
+    },{
+      "type": "BaseInput",
+      "name": "alpha_en",
+      "depends": [
+        {
+          "name": "method",
+          "value": "elasticnet"
+        }
+      ],
+      "label": "Elastic Net alpha",
+      "initialValue": 0.5,
+      "required": true,
+      "rules": [
+        {
+          "required": true
+        }
+      ]
+    }
+```
+    
 
 实现读取params.json 中的 seuratObject 的path，

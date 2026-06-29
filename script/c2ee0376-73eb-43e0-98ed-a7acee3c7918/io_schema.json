@@ -1,0 +1,340 @@
+{
+    "inputs": [
+        {
+            "label": "SeuratObject  File",
+            "name": "seuratObject",
+            "type": "SelectSample",
+            "input_type": "file",
+            "mode": "none",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        }
+    ],
+    "outputs": [
+        {
+            "name": "processed_rds",
+            "type": "file",
+            "pattern": "processed_seurat.rds",
+            "required": true
+        },
+        {
+            "name": "differential_features",
+            "type": "file",
+            "pattern": "differentially_expressed_features.tsv",
+            "required": true
+        },
+        {
+            "name": "visualizations",
+            "type": "file",
+            "pattern": "*.png",
+            "required": false
+        },
+        {
+            "name": "summary",
+            "type": "file",
+            "pattern": "output.md",
+            "required": true
+        }
+    ],
+    "params": [
+        {
+            "name": "normalize_method",
+            "label": "normalize_method",
+            "type": "BaseSelect",
+            "initialValue": "lognormalize",
+            "data": [
+                {
+                    "label": "lognormalize",
+                    "value": "lognormalize"
+                },
+                {
+                    "label": "rc",
+                    "value": "rc"
+                }
+            ],
+            "tooltip": "Normalization method for NormalizeData"
+        },
+        {
+            "name": "scale_factor",
+            "label": "scale_factor",
+            "type": "BaseInputNumber",
+            "initialValue": 10000,
+            "tooltip": "Scale factor for normalization"
+        },
+        {
+            "name": "selection_method",
+            "label": "selection_method",
+            "type": "BaseSelect",
+            "initialValue": "vst",
+            "data": [
+                {
+                    "label": "vst",
+                    "value": "vst"
+                },
+                {
+                    "label": "mean.var.plot",
+                    "value": "mean.var.plot"
+                },
+                {
+                    "label": "dispersion",
+                    "value": "dispersion"
+                }
+            ],
+            "tooltip": "Variable feature selection method"
+        },
+        {
+            "name": "nfeatures",
+            "label": "nfeatures",
+            "type": "BaseInputNumber",
+            "initialValue": 2000,
+            "tooltip": "Number of variable features"
+        },
+        {
+            "name": "npcs",
+            "label": "npcs",
+            "type": "BaseInputNumber",
+            "initialValue": 30,
+            "tooltip": "Number of principal components"
+        },
+        {
+            "name": "neighbor_dims",
+            "label": "neighbor_dims",
+            "type": "BaseInput",
+            "initialValue": "1:30",
+            "tooltip": "PC dims for FindNeighbors, e.g. 1:20 or 1,2,3"
+        },
+        {
+            "name": "resolution",
+            "label": "resolution",
+            "type": "BaseInputNumber",
+            "initialValue": 0.5,
+            "tooltip": "Clustering resolution"
+        },
+        {
+            "name": "cluster_algorithm",
+            "label": "cluster_algorithm",
+            "type": "BaseInputNumber",
+            "initialValue": 1,
+            "tooltip": "FindClusters algorithm, e.g. 1 for Louvain"
+        },
+        {
+            "name": "vars_to_regress",
+            "label": "vars_to_regress",
+            "type": "BaseTextAreaNum",
+            "initialValue": "",
+            "tooltip": "Comma-separated metadata columns for ScaleData vars.to.regress"
+        },
+        {
+            "name": "run_umap",
+            "label": "run_umap",
+            "type": "BaseSwitch",
+            "initialValue": true,
+            "tooltip": "Whether to run UMAP"
+        },
+        {
+            "name": "umap_dims",
+            "label": "umap_dims",
+            "type": "BaseInput",
+            "depends": [
+                {
+                    "name": "run_umap",
+                    "value": true
+                }
+            ],
+            "initialValue": "1:30",
+            "tooltip": "PC dims for UMAP"
+        },
+        {
+            "name": "umap_n_neighbors",
+            "label": "umap_n_neighbors",
+            "type": "BaseInputNumber",
+            "depends": [
+                {
+                    "name": "run_umap",
+                    "value": true
+                }
+            ],
+            "initialValue": 30,
+            "tooltip": "UMAP n.neighbors"
+        },
+        {
+            "name": "umap_min_dist",
+            "label": "umap_min_dist",
+            "type": "BaseInputNumber",
+            "depends": [
+                {
+                    "name": "run_umap",
+                    "value": true
+                }
+            ],
+            "initialValue": 0.3,
+            "tooltip": "UMAP min.dist"
+        },
+        {
+            "name": "umap_metric",
+            "label": "umap_metric",
+            "type": "BaseSelect",
+            "depends": [
+                {
+                    "name": "run_umap",
+                    "value": true
+                }
+            ],
+            "initialValue": "cosine",
+            "data": [
+                {
+                    "label": "cosine",
+                    "value": "cosine"
+                },
+                {
+                    "label": "euclidean",
+                    "value": "euclidean"
+                },
+                {
+                    "label": "manhattan",
+                    "value": "manhattan"
+                },
+                {
+                    "label": "correlation",
+                    "value": "correlation"
+                }
+            ],
+            "tooltip": "UMAP distance metric"
+        },
+        {
+            "name": "run_tsne",
+            "label": "run_tsne",
+            "type": "BaseSwitch",
+            "initialValue": true,
+            "tooltip": "Whether to run t-SNE"
+        },
+        {
+            "name": "tsne_dims",
+            "label": "tsne_dims",
+            "type": "BaseInput",
+            "depends": [
+                {
+                    "name": "run_tsne",
+                    "value": true
+                }
+            ],
+            "initialValue": "1:30",
+            "tooltip": "PC dims for t-SNE"
+        },
+        {
+            "name": "tsne_perplexity",
+            "label": "tsne_perplexity",
+            "type": "BaseInputNumber",
+            "depends": [
+                {
+                    "name": "run_tsne",
+                    "value": true
+                }
+            ],
+            "initialValue": 30,
+            "tooltip": "t-SNE perplexity"
+        },
+        {
+            "name": "de_mode",
+            "label": "de_mode",
+            "type": "BaseSelect",
+            "initialValue": "all_clusters",
+            "data": [
+                {
+                    "label": "all_clusters",
+                    "value": "all_clusters"
+                },
+                {
+                    "label": "target_cluster",
+                    "value": "target_cluster"
+                }
+            ],
+            "tooltip": "Differential expression mode"
+        },
+        {
+            "name": "de_target_cluster",
+            "label": "de_target_cluster",
+            "type": "BaseInput",
+            "depends": [
+                {
+                    "name": "de_mode",
+                    "value": "target_cluster"
+                }
+            ],
+            "initialValue": "",
+            "tooltip": "Cluster id used when de_mode is target_cluster"
+        },
+        {
+            "name": "de_test_use",
+            "label": "de_test_use",
+            "type": "BaseSelect",
+            "initialValue": "wilcox",
+            "data": [
+                {
+                    "label": "wilcox",
+                    "value": "wilcox"
+                },
+                {
+                    "label": "MAST",
+                    "value": "MAST"
+                },
+                {
+                    "label": "LR",
+                    "value": "lr"
+                },
+                {
+                    "label": "t",
+                    "value": "t"
+                }
+            ],
+            "tooltip": "FindAllMarkers/FindMarkers test.use"
+        },
+        {
+            "name": "de_only_pos",
+            "label": "de_only_pos",
+            "type": "BaseSwitch",
+            "initialValue": false,
+            "tooltip": "Only return positive markers"
+        },
+        {
+            "name": "de_min_pct",
+            "label": "de_min_pct",
+            "type": "BaseInputNumber",
+            "initialValue": 0.25,
+            "tooltip": "FindMarkers min.pct"
+        },
+        {
+            "name": "de_logfc_threshold",
+            "label": "de_logfc_threshold",
+            "type": "BaseInputNumber",
+            "initialValue": 0.25,
+            "tooltip": "FindMarkers logfc.threshold"
+        },
+        {
+            "name": "random_seed",
+            "label": "random_seed",
+            "type": "BaseInputNumber",
+            "initialValue": 1234,
+            "tooltip": "Random seed for reproducibility"
+        }
+    ],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "green"
+    }
+}
