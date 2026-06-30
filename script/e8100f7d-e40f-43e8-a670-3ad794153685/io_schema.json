@@ -1,0 +1,121 @@
+{
+    "inputs": [
+        {
+            "label": "SeuratObject  File",
+            "name": "seuratObject",
+            "type": "SelectSample",
+            "input_type": "file",
+            "mode": "none",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        }
+    ],
+    "outputs": [
+        {
+            "name": "qc_rds",
+            "type": "file",
+            "pattern": "qc_seurat.rds",
+            "required": true
+        },
+        {
+            "name": "qc_plots",
+            "type": "file",
+            "pattern": "*.png",
+            "required": false
+        },
+        {
+            "name": "qc_metrics",
+            "type": "file",
+            "pattern": "qc_metrics.tsv",
+            "required": true
+        },
+        {
+            "name": "summary",
+            "type": "file",
+            "pattern": "output.md",
+            "required": true
+        }
+    ],
+    "params": [
+        {
+            "name": "mito_pattern",
+            "label": "mito_pattern",
+            "type": "BaseInput",
+            "initialValue": "^MT-",
+            "tooltip": "Regex pattern for mitochondrial genes, e.g. ^MT- (human) or ^mt- (mouse)"
+        },
+        {
+            "name": "min_features",
+            "label": "min_features",
+            "type": "BaseInputNumber",
+            "initialValue": 200,
+            "tooltip": "Keep cells with nFeature_RNA >= min_features"
+        },
+        {
+            "name": "max_features",
+            "label": "max_features",
+            "type": "BaseInputNumber",
+            "initialValue": 2500,
+            "tooltip": "Keep cells with nFeature_RNA <= max_features"
+        },
+        {
+            "name": "max_percent_mt",
+            "label": "max_percent_mt",
+            "type": "BaseInputNumber",
+            "initialValue": 5,
+            "tooltip": "Keep cells with percent.mt <= max_percent_mt"
+        },
+        {
+            "name": "use_count_filter",
+            "label": "use_count_filter",
+            "type": "BaseSwitch",
+            "initialValue": false,
+            "tooltip": "Whether to additionally filter by nCount_RNA"
+        },
+        {
+            "name": "min_counts",
+            "label": "min_counts",
+            "type": "BaseInputNumber",
+            "depends": [
+                {
+                    "name": "use_count_filter",
+                    "value": true
+                }
+            ],
+            "initialValue": 0,
+            "tooltip": "Keep cells with nCount_RNA >= min_counts"
+        },
+        {
+            "name": "max_counts",
+            "label": "max_counts",
+            "type": "BaseInputNumber",
+            "depends": [
+                {
+                    "name": "use_count_filter",
+                    "value": true
+                }
+            ],
+            "initialValue": 0,
+            "tooltip": "Keep cells with nCount_RNA <= max_counts; 0 means no upper bound"
+        }
+    ],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "green"
+    }
+}

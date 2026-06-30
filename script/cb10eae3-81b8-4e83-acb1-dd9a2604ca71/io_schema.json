@@ -38,6 +38,13 @@
                     "type": "BaseTextAreaNum",
                     "initialValue": "",
                     "tooltip": "Comma-separated gene list for FeaturePlot"
+                },
+                {
+                    "name": "node_name",
+                    "label": "Cell type",
+                    "type": "BaseInput",
+                    "initialValue": "",
+                    "tooltip": "cell type"
                 }
             ],
             "component_id": "DEFAULT",
@@ -75,7 +82,25 @@
             "required": true
         }
     ],
-    "params": [],
+    "params": [
+        {
+            "name": "dimplot_reduction",
+            "label": "DimPlot reduction",
+            "type": "BaseSelect",
+            "initialValue": "umap",
+            "data": [
+                {
+                    "label": "UMAP",
+                    "value": "umap"
+                },
+                {
+                    "label": "t-SNE",
+                    "value": "tsne"
+                }
+            ],
+            "tooltip": "Choose reduction for DimPlot/FeaturePlot"
+        }
+    ],
     "resources": {
         "cpu": 4,
         "memory": "6GB",

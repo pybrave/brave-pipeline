@@ -48,11 +48,20 @@ if (!inherits(obj, "Seurat")) {
 	stop("Input file is not a valid Seurat object")
 }
 
-if (!("umap" %in% names(obj@reductions))) {
-	stop("UMAP reduction not found in Seurat object")
+reduction_method <- params$seuratObject$dimplot_reduction %||% params$dimplot_reduction %||% params$reduction %||% "umap"
+reduction_method <- tolower(trimws(normalize_scalar(reduction_method)))
+if (identical(reduction_method, "uamp")) {
+	reduction_method <- "umap"
+}
+valid_reductions <- c("umap", "tsne")
+if (!(reduction_method %in% valid_reductions)) {
+	stop(sprintf("Invalid reduction '%s'. Supported values are: %s", reduction_method, paste(valid_reductions, collapse = ", ")))
+}
+if (!(reduction_method %in% names(obj@reductions))) {
+	stop(sprintf("Reduction '%s' not found in Seurat object. Available reductions: %s", reduction_method, paste(names(obj@reductions), collapse = ", ")))
 }
 
-umap_plot <- DimPlot(obj, reduction = "umap")
+umap_plot <- DimPlot(obj, reduction = reduction_method,label = TRUE)
 umap_file <- file.path(output_dir, "umap.png")
 ggplot2::ggsave(umap_file, plot = umap_plot, width = 8, height = 6, dpi = 300)
 
@@ -64,7 +73,7 @@ missing_genes <- setdiff(genes, present_genes)
 feature_files <- character(0)
 if (length(present_genes) > 0) {
 	for (gene in present_genes) {
-		p <- FeaturePlot(obj, features = gene, reduction = "umap")
+		p <- FeaturePlot(obj, features = gene, reduction = reduction_method)
 		out_name <- paste0("featureplot_", safe_file_stem(gene), ".png")
 		out_path <- file.path(output_dir, out_name)
 		ggplot2::ggsave(out_path, plot = p, width = 8, height = 6, dpi = 300)
@@ -77,6 +86,7 @@ info_lines <- c(
 	"",
 	"## Inputs",
 	sprintf("- seurat_path: %s", seurat_path),
+	sprintf("- reduction: %s", reduction_method),
 	"",
 	"## Outputs",
 	sprintf("- umap_plot: %s", umap_file),
@@ -87,7 +97,7 @@ info_lines <- c(
 
 writeLines(info_lines, file.path(output_dir, "output.md"))
 
-message(sprintf("UMAP plot saved: %s", umap_file))
+message(sprintf("DimPlot saved (%s): %s", reduction_method, umap_file))
 if (length(feature_files) > 0) {
 	message(sprintf("FeaturePlot files saved: %d", length(feature_files)))
 }

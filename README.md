@@ -13,7 +13,70 @@ git clone https://github.com/pybrave/pipeline-metagenomics.git ~/.brave/pipeline
 
 
 
-params.json 是根据用户输入 io_schema.json 生成的表单生成的，文件输入配置在 inputs/workflow(只有当scatter=each才使用workflow)，一些其它配置请放在 io_schema.json 的 params 下，配置格式请参考如下
+params.json 是根据用户输入 io_schema.json 生成的表单生成的，文件输入配置在 inputs/workflow(只有当scatter=each才使用workflow)，一些其它配置请放在 io_schema.json 的 params 下，
+io_schema.json下的input/workflow：配置格式请参考如下
+{
+    "label": "Pheno File",
+    "name": "pheno",
+    "type": "SelectSample",
+    "input_type": "file",
+    "mode":"none",
+    "component_id": "DEFAULT",
+    "resolver": {
+        "accept_formats": [
+            "DEFAULT"
+        ]
+    },
+    "db": true,
+    "rules": [
+        {
+            "required": true,
+            "message": "该字段不能为空!"
+        }
+    ]
+},
+
+{
+      "name": "input",
+      "label": "input",
+      "db":true,
+      "input_type": "file",
+      "resolver": {
+        "accept_formats": [
+            "TABLE"
+        ]
+    },
+
+    "component_id":"TABLE",
+      "columns": [
+          "x_axis",
+          "y_axis",
+          "log_transformed",
+          "samples"
+      ],
+      "modes": [
+          1,
+          1,
+          1,
+          0
+      ],
+     "columns_rules": [
+        1,
+        1,
+        0,
+        0,
+      ],
+      "type": "CollectedSampleSelect"
+    }
+
+
+resolver/accept_formats: DEFAULT/TABLE
+当resolver/accept_formats=DEFAULT时,目前支持的type有SelectSample,其中mode可以是 multiple
+当resolver/accept_formats=TABLE时,目前支持的type有CollectedSampleSelect,其中columns表示新增选择列的 select 表单,modes:0代表单选, modes:1代表多选, columns_rules:1代表不能为空,columns_rules:0 代表可以为空
+component_id目前与  resolver  accept_formats 中的值一致, 表示前端
+
+
+io_schema.json下的params：配置格式请参考如下
 ```
 {
             "name": "mind",

@@ -1,0 +1,83 @@
+{
+    "inputs": [
+        {
+            "label": "Pheno File",
+            "name": "pheno",
+            "type": "SelectSample",
+            "input_type": "file",
+            "component_id": "DEFAULT",
+            "resolver": {
+                "accept_formats": [
+                    "DEFAULT"
+                ]
+            },
+            "mode": "multiple",
+            "db": true,
+            "rules": [
+                {
+                    "required": true,
+                    "message": "\u8be5\u5b57\u6bb5\u4e0d\u80fd\u4e3a\u7a7a!"
+                }
+            ]
+        },
+        {
+            "name": "input",
+            "label": "input",
+            "db": true,
+            "input_type": "file",
+            "resolver": {
+                "accept_formats": [
+                    "TABLE"
+                ]
+            },
+            "component_id": "TABLE",
+            "columns": [
+                "x_axis",
+                "y_axis",
+                "log_transformed",
+                "samples"
+            ],
+            "modes": [
+                1,
+                1,
+                1,
+                0
+            ],
+            "rules": [
+                {
+                    "required": true,
+                    "message": "This field cannot be empty!"
+                }
+            ],
+            "type": "CollectedSampleSelect"
+        },
+        {
+            "label": "input2",
+            "name": "input2",
+            "type": "BaseInput",
+            "required": true
+        }
+    ],
+    "outputs": [
+        {
+            "name": "bam",
+            "type": "file"
+        }
+    ],
+    "params": [
+        {
+            "name": "params_name",
+            "label": "params_name",
+            "type": "BaseInput",
+            "initialValue": "params_value"
+        }
+    ],
+    "resources": {
+        "cpu": 4,
+        "memory": "6GB"
+    },
+    "ui": {
+        "icon": "scissors",
+        "color": "green"
+    }
+}
